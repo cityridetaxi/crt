@@ -3607,16 +3607,107 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
             }
         }
 
-        // --- Fallback Text Matching (City Name) ---
+        // --- Fallback Text Matching & Advanced Geo-Parsing (City Name) ---
         if (!finalAssociationId && booking.pickup) {
             try {
                 const [assocs] = await db.query('SELECT id, city_name FROM taxi_associations WHERE is_active = 1 AND city_name IS NOT NULL AND city_name != ""');
                 const pickupLower = String(booking.pickup).toLowerCase();
-                // Match if the pickup text contains the association's city name
-                const matched = assocs.find(a => pickupLower.includes(String(a.city_name).toLowerCase()));
+
+                // 1. First try direct match
+                let matched = assocs.find(a => pickupLower.includes(String(a.city_name).trim().toLowerCase()));
+                
+                // 2. If no direct match, try our comprehensive TN District Geo-Parser
+                if (!matched) {
+                    const TN_GEO_DISTRICTS_ROUTER = [
+                        { district:'Ariyalur',        keywords:['ariyalur','udayarpalayam','sendurai','jayankondam','andimadam'] },
+                        { district:'Chengalpattu',    keywords:['chengalpattu','chengalpet','tambaram','chrompet','pallavaram','guduvanchery','vandalur','urapakkam','tiruporur','madurantakam','singaperumal koil','uthiramerur','thirukalukundram','kovalam','akkarai','potheri','selaiyur','kilambakkam','maraimalai nagar'] },
+                        { district:'Chennai',         keywords:['chennai','madras','adyar','anna nagar','t nagar','mylapore','velachery','kodambakkam','nungambakkam','egmore','perambur','kolathur','ambattur','avadi','manali','tondiarpet','sowcarpet','george town','fort st george','marina','triplicane','washermanpet','royapettah','kilpauk','chetpet','teynampet','mandaveli','saidapet','guindy','alandur','meenambakkam','besant nagar','thiruvanmiyur','palavakkam','injambakkam','sholinganallur','perungudi','thoraipakkam','pallikaranai','nanganallur','madipakkam','medavakkam','chromepet','poonamallee','ayanavaram','villivakkam','virugambakkam','ashok nagar','mugalivakkam','porur','iyyapanthangal','valasaravakkam','ramapuram','koyambedu','arumbakkam','mogappair','aminjikarai','choolai','pursaiwalkam','royapuram'] },
+                        { district:'Coimbatore',      keywords:['coimbatore','kovai','pollachi','mettupalayam','annur','sulur','kinathukadavu','perur','palladam','udumalaipettai','valparai','anaimalai','karamadai','thondamuthur','saravanampatti','ganapathy','singanallur','peelamedu','gandhipuram','rs puram'] },
+                        { district:'Cuddalore',       keywords:['cuddalore','chidambaram','panruti','virudhachalam','tittagudi','neyveli','kurinjipadi','kattumannarkoil','srimushnam','annamalainagar','pichavaram','parangipettai','kollidam'] },
+                        { district:'Dharmapuri',      keywords:['dharmapuri','palacode','pennagaram','nallampalli','harur','karimangalam','morappur','pappireddipatti','kambainallur','bommidi'] },
+                        { district:'Dindigul',        keywords:['dindigul','palani','kodaikanal','oddanchatram','natham','vedasandur','nilakottai','athoor','gujiliamparai','shanarpatti'] },
+                        { district:'Erode',           keywords:['erode','bhavani','perundurai','gobichettipalayam','sathyamangalam','anthiyur','nambiyur','kodumudi','kavindapadi','kavundapadi','thalavadi','bhavanisagar'] },
+                        { district:'Kallakurichi',    keywords:['kallakurichi','sankarapuram','ulundurpet','tirukoilur','chinnasalem','rishivandiyam','vanapuram'] },
+                        { district:'Kanchipuram',     keywords:['kanchipuram','kancheepuram','uthiramerur','wallajabad','sriperumbudur','padappai','oragadam','vikravandi','walajabad'] },
+                        { district:'Kanyakumari',     keywords:['kanyakumari','nagercoil','marthandam','padmanabhapuram','colachel','kulasekaram','vilavancode','thuckalay','eraniel','kuzhithurai','suchindram','agastheeswaram','thiruvattar'] },
+                        { district:'Karur',           keywords:['karur','kulithalai','aravakurichi','krishnarayapuram','thanthoni','manmangalam','pugalur','kadavur'] },
+                        { district:'Krishnagiri',     keywords:['krishnagiri','hosur','bargur','shoolagiri','uthangarai','pochampalli','mathur','denkanikottai','kaveripattinam','veppanapalli','rayakottah','kaveripatnam','kelamangalam','anchetti','thally','natrampalayam'] },
+                        { district:'Madurai',         keywords:['madurai','melur','thirumangalam','usilampatti','peraiyur','tiruparankundram','sholavandan','vadipatti','alanganallur','thirumogur','othakadai','paravai','vilangudi','anaiyur','thiruppuvanam'] },
+                        { district:'Mayiladuthurai',  keywords:['mayiladuthurai','mayavaram','sirkali','kuthalam','thalainayar','kollidam'] },
+                        { district:'Nagapattinam',    keywords:['nagapattinam','vedaranyam','kilvelur','thirumarugal','keelaiyur','nagore'] },
+                        { district:'Namakkal',        keywords:['namakkal','rasipuram','tiruchengodu','tiruchencode','kumarapalayam','paramathi','velur','sendamangalam','kollihills','mohanur'] },
+                        { district:'Nilgiris',        keywords:['nilgiris','ooty','ootacamund','udagamandalam','coonoor','kotagiri','gudalur','mudumalai','masinagudi','kothagiri'] },
+                        { district:'Perambalur',      keywords:['perambalur','kunnam','veppanthattai','veppur'] },
+                        { district:'Pudukkottai',     keywords:['pudukkottai','karaikudi','tirumayam','alangudi','gandarvakottai','aranthangi','illuppur','manamelkudi','annavasal'] },
+                        { district:'Ramanathapuram',  keywords:['ramanathapuram','ramnad','rameswaram','pamban','mandapam','keelakarai','paramakudi','mudukulathur','tiruvadanai','sayalkudi','devipattinam'] },
+                        { district:'Ranipet',         keywords:['ranipet','walajapet','arcot','sholinghur','nemili','kaveripakkam'] },
+                        { district:'Salem',           keywords:['salem','mettur','mettur dam','omalur','edappadi','yercaud','attur','idappadi','magudanchavadi','gangavalli','thalaivasal','vazhapadi','suramangalam','fairlands','gugai','ammapet','dasanaickenpatty','kondalampatti','ethapur','shevapet','senderampatty','malikipuram','veerapandi','thangamapuripatinam'] },
+                        { district:'Sivaganga',       keywords:['sivaganga','devakottai','ilayankudi','tirupuvanam','singampunari','manamadurai','kallal'] },
+                        { district:'Tenkasi',         keywords:['tenkasi','alangulam','sankarankovil','kadayanallur','veerakeralampudur','surandai','shencottah','courtallam'] },
+                        { district:'Thanjavur',       keywords:['thanjavur','papanasam','kumbakonam','thiruvaiyaru','pattukottai','orathanadu','peravurani','thiruvidaimaruthur','tiruvidaimarudur','needamangalam','budalur'] },
+                        { district:'Theni',           keywords:['theni','periyakulam','uthamapalayam','bodinayakanur','bodi','andipatti','cumbum'] },
+                        { district:'Thoothukudi',     keywords:['thoothukudi','tuticorin','tuticorn','kovilpatti','ottapidaram','vilathikulam','kayalpatnam','eral','thiruchendur','srivaikuntam'] },
+                        { district:'Tiruchirappalli', keywords:['tiruchirappalli','trichy','tiruchi','srirangam','thuvakudi','lalgudi','manachanallur','tiruverumbur','ariyamangalam','musiri','thuraiyur','manapparai','pullambadi'] },
+                        { district:'Tirunelveli',     keywords:['tirunelveli','nellai','palayamkottai','ambasamudram','cheranmahadevi','valliyur','nanguneri','mundanthurai'] },
+                        { district:'Tirupathur',      keywords:['tirupathur','tirupattur','ambur','vaniyambadi','jolarpet','natrampalli','kandili'] },
+                        { district:'Tiruppur',        keywords:['tiruppur','tirupur','dharapuram','udumalpet','kangeyam','avinashi','uthukuli','mulanur','vellakoil'] },
+                        { district:'Tiruvallur',      keywords:['tiruvallur','tiruvallore','ponneri','gummidipoondi','redhills','red hills','thiruvalangadu','uthukottai','ennore','manali new town','madhavaram','sholavaram'] },
+                        { district:'Tiruvannamalai',  keywords:['tiruvannamalai','arani','chengam','polur','vandavasi','kalasapakkam','vembakkam','kilpennathur'] },
+                        { district:'Tiruvarur',       keywords:['tiruvarur','nannilam','mannargudi','thiruthuraipoondi','valangaiman','kodavasal'] },
+                        { district:'Vellore',         keywords:['vellore','katpadi','gudiyatham','pernambut','jolarpettai','anaicut','alangayam'] },
+                        { district:'Viluppuram',      keywords:['viluppuram','tindivanam','gingee','gingi','marakanam','tirukoilur','mugaiyur','olakkur','vanur','vikkiravandi'] },
+                        { district:'Virudhunagar',    keywords:['virudhunagar','srivilliputhur','rajapalayam','sivakasi','sattur','aruppukkottai','vembakottai','watrap','kariapatti'] }
+                    ];
+
+                    const PINCODE_PREFIX_MAP_ROUTER = {
+                        '600':'Chennai','601':'Tiruvallur','603':'Chengalpattu','604':'Viluppuram','606':'Tiruvannamalai',
+                        '607':'Cuddalore','609':'Mayiladuthurai','610':'Tiruvarur','611':'Nagapattinam','613':'Thanjavur',
+                        '614':'Thanjavur','620':'Tiruchirappalli','621':'Ariyalur','622':'Pudukkottai','623':'Ramanathapuram',
+                        '624':'Dindigul','625':'Madurai','626':'Virudhunagar','627':'Tirunelveli','628':'Thoothukudi',
+                        '629':'Kanyakumari','630':'Sivaganga','631':'Kanchipuram','632':'Vellore','633':'Tiruvannamalai',
+                        '634':'Chengalpattu','635':'Krishnagiri','636':'Salem','637':'Namakkal','638':'Erode',
+                        '639':'Karur','641':'Coimbatore','643':'Nilgiris','627[8-9]':'Tenkasi'
+                    };
+
+                    let detectedDistrict = null;
+                    
+                    // Check pincode
+                    const pm = pickupLower.match(/\b(6[0-4][0-9])\d{3}\b/g);
+                    if (pm) {
+                        for (const pin of pm) {
+                            const prefix = pin.substring(0, 3);
+                            if (PINCODE_PREFIX_MAP_ROUTER[prefix]) detectedDistrict = PINCODE_PREFIX_MAP_ROUTER[prefix];
+                        }
+                    }
+
+                    // Check keywords
+                    if (!detectedDistrict) {
+                        for (const entry of TN_GEO_DISTRICTS_ROUTER) {
+                            for (const kw of entry.keywords) {
+                                const idx = pickupLower.indexOf(kw);
+                                if (idx === -1) continue;
+                                const before = idx === 0 ? ' ' : pickupLower[idx - 1];
+                                const after = idx + kw.length >= pickupLower.length ? ' ' : pickupLower[idx + kw.length];
+                                if (/[^a-z]/.test(before) && /[^a-z]/.test(after)) {
+                                    detectedDistrict = entry.district;
+                                    break;
+                                }
+                            }
+                            if (detectedDistrict) break;
+                        }
+                    }
+
+                    // Map detected district to an association
+                    if (detectedDistrict) {
+                        const distLower = detectedDistrict.trim().toLowerCase();
+                        matched = assocs.find(a => String(a.city_name).trim().toLowerCase() === distLower);
+                    }
+                }
+
                 if (matched) {
                     finalAssociationId = matched.id;
                 }
+                console.log(`[Association Router] pickup: ${booking.pickup} -> detectedDistrict: ${detectedDistrict} -> matched: ${matched ? matched.id : 'null'} -> finalAssoc: ${finalAssociationId}`);
             } catch (assocErr) {
                 console.warn('Text association lookup warning:', assocErr.message);
             }
@@ -8618,6 +8709,15 @@ app.get('/api/association/stats', authenticateJWT, requireRole(['association_adm
 
         const [driverRows] = await db.query('SELECT COUNT(*) as count FROM taxi_drivers WHERE association_id = ?', [assocId]);
         stats.activePilots = driverRows[0].count;
+
+        const [fareRows] = await db.query(`SELECT fare, dynamic_fare FROM taxi_bookings WHERE association_id = ? AND status IN ('completed', 'finished')`, [assocId]);
+        let totalFare = 0;
+        fareRows.forEach(r => {
+            const fareStr = String(r.dynamic_fare || r.fare || '0');
+            const num = parseFloat(fareStr.replace(/[^0-9.]/g, '')) || 0;
+            totalFare += num;
+        });
+        stats.totalFareCollected = totalFare;
 
         res.json(stats);
     } catch (err) {

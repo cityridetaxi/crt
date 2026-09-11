@@ -924,7 +924,7 @@ function switchTab(tabId, el) {
             if (!statsRes || !ridesRes || !walletRes) return;
             const [stats, rides, wallet] = await Promise.all([statsRes.json(), ridesRes.json(), walletRes.json()]);
             document.getElementById('stat-wallet').textContent = '\u20B9' + parseFloat(wallet.balance||0).toFixed(2);
-            document.getElementById('stat-earned').textContent = '\u20B9' + parseFloat(wallet.total_earned||0).toFixed(2);
+            document.getElementById('stat-earned').textContent = '\u20B9' + parseFloat(stats.totalFareCollected||0).toFixed(2);
             document.getElementById('stat-pilots').textContent = stats.activePilots || 0;
             document.getElementById('stat-active').textContent = stats.assigned || 0;
             document.getElementById('stat-completed').textContent = stats.completed || 0;
@@ -937,7 +937,7 @@ function switchTab(tabId, el) {
                 '<td data-label="Ride ID"><strong>#B' + r.id + '</strong></td>' +
                 '<td data-label="Customer">' + (r.passenger_name||r.customer_name||'—') + '<br><small style="color:var(--text-muted)">' + (r.passenger_phone||r.customer_phone||'') + '</small></td>' +
                 '<td data-label="Trip"><small>' + (r.pickup_loc||'').substring(0,30) + '</small><br><small style="color:var(--text-muted)">' + (r.drop_loc||'').substring(0,30) + '</small></td>' +
-                '<td data-label="Fare">' + (r.fare||'—') + '</td>' +
+                '<td data-label="Fare">' + (r.dynamic_fare || r.fare || '—') + '</td>' +
                 '<td data-label="Pilot">' + (r.driver_name||'<em style="color:var(--text-muted)">Unassigned</em>') + '</td>' +
                 '<td data-label="Status"><span class="status-tag status-' + r.status + '">' + r.status + '</span></td>' +
                 '</tr>').join('');
@@ -961,7 +961,7 @@ function switchTab(tabId, el) {
                 '<td data-label="ID"><strong>#B' + r.id + '</strong><br><small style="color:var(--text-muted)">' + (r.trip_type||'') + '</small></td>' +
                 '<td data-label="Customer">' + (r.passenger_name||r.customer_name||'—') + '<br><small>' + (r.passenger_phone||r.customer_phone||'') + '</small></td>' +
                 '<td data-label="Trip"><small><strong>From:</strong> ' + (r.pickup_loc||'').substring(0,28) + '</small><br><small style="color:var(--text-muted)"><strong>To:</strong> ' + (r.drop_loc||'').substring(0,28) + '</small><br><small style="color:var(--text-muted)">' + (r.pickup_date||'') + ' ' + (r.pickup_time||'') + '</small></td>' +
-                '<td data-label="Fare"><strong>' + (r.fare||'—') + '</strong></td>' +
+                '<td data-label="Fare"><strong>' + (r.dynamic_fare || r.fare || '—') + '</strong></td>' +
                 '<td data-label="Pilot">' + (r.driver_name||'<em style="color:var(--text-muted)">Unassigned</em>') + '</td>' +
                 '<td data-label="Status"><span class="status-tag status-' + r.status + '">' + r.status + '</span></td>' +
                 '<td data-label="Action">' + 
