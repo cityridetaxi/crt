@@ -25,16 +25,26 @@ jobs:
             echo "CityRideTaxi Deployment Started"
             echo "================================"
 
-            # Load Node.js and PM2 installed through NVM
-            export PATH="/home/cityride/.nvm/versions/node/v24.21.0/bin:$PATH"
+            # Load NVM
+            export NVM_DIR="/home/cityride/.nvm"
 
-            echo "Node version:"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              source "$NVM_DIR/nvm.sh"
+            else
+              echo "ERROR: NVM not found"
+              exit 1
+            fi
+
+            # Use the installed Node version
+            nvm use 24
+
+            echo "Node:"
             node -v
 
-            echo "NPM version:"
+            echo "NPM:"
             npm -v
 
-            echo "PM2 version:"
+            echo "PM2:"
             pm2 -v
 
             cd /var/www/cityridetaxi
@@ -51,10 +61,10 @@ jobs:
             echo "Saving PM2 configuration..."
             pm2 save
 
-            echo "Checking application..."
+            echo "PM2 status:"
             pm2 status
 
-            echo "Testing local API..."
+            echo "Testing application..."
             curl -f http://127.0.0.1:3000/ > /dev/null
 
             echo "================================"
