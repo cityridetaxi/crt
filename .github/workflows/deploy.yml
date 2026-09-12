@@ -1,4 +1,4 @@
-name: Deploy CityRide
+name: Deploy CityRideTaxi
 
 on:
   push:
@@ -7,55 +7,41 @@ on:
 
 jobs:
   deploy:
-    runs-on:
-      - self-hosted
-      - Linux
-      - X64
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy to Hostinger VPS
+        uses: appleboy/ssh-action@v1.2.2
         with:
-          node-version: 22
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
 
-      - name: Install Dependencies
-        run: npm install
+          script: |
+            set -e
 
-      - name: Ensure Deployment Directory Exists
-        run: mkdir -p /home/ubuntu/cityridetaxis
+            echo "================================"
+            echo "CityRideTaxi Deployment Started"
+            echo "================================"
 
-      - name: Sync Application Files
-        run: |
-          rsync -av --delete \
-            --exclude=node_modules \
-            --exclude=.git \
-            --exclude=.github \
-            --exclude=.env \
-            "$GITHUB_WORKSPACE/" \
-            /home/ubuntu/cityridetaxis/
+            cd /var/www/cityridetaxi
 
-      - name: Verify Environment File
-        run: ls -la /home/ubuntu/cityridetaxis/.env
+            echo "Pulling latest code..."
+            git pull origin main
 
-      - name: Install Production Dependencies
-        run: |
-          cd /home/ubuntu/cityridetaxis
-          npm install
+            echo "Installing production dependencies..."
+            npm install --omit=dev
 
-      - name: Restart Application
-        run: |
-          cd /home/ubuntu/cityridetaxis
-          pm2 restart cityride --update-env || pm2 start server.js --name cityride
-          pm2 save
+            echo "Restarting CityRideTaxi..."
+            pm2 restart cityride-api
 
-      - name: Wait For Startup
-        run: sleep 10
+            echo "Saving PM2 configuration..."
+            pm2 save
 
-      - name: Verify PM2 Status
-        run: pm2 status
+            echo "Checking application..."
+            pm2 status
 
-      - name: Verify Port 3000
-        run: sudo ss -tulnp | grep 3000 || true
+            echo "================================"
+            echo "Deployment Completed Successfully"
+            echo "================================"
