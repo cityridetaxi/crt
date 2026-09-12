@@ -25,6 +25,18 @@ jobs:
             echo "CityRideTaxi Deployment Started"
             echo "================================"
 
+            # Load Node.js and PM2 installed through NVM
+            export PATH="/home/cityride/.nvm/versions/node/v24.21.0/bin:$PATH"
+
+            echo "Node version:"
+            node -v
+
+            echo "NPM version:"
+            npm -v
+
+            echo "PM2 version:"
+            pm2 -v
+
             cd /var/www/cityridetaxi
 
             echo "Pulling latest code..."
@@ -34,13 +46,16 @@ jobs:
             npm install --omit=dev
 
             echo "Restarting CityRideTaxi..."
-            pm2 restart cityride-api
+            pm2 restart cityride-api --update-env
 
             echo "Saving PM2 configuration..."
             pm2 save
 
             echo "Checking application..."
             pm2 status
+
+            echo "Testing local API..."
+            curl -f http://127.0.0.1:3000/ > /dev/null
 
             echo "================================"
             echo "Deployment Completed Successfully"
