@@ -25,19 +25,19 @@ jobs:
             echo "CityRideTaxi Deployment Started"
             echo "================================"
 
-            # -----------------------------------------
-            # Load Node.js from NVM
-            # -----------------------------------------
+            # =========================================
+            # Load NVM / Node.js
+            # =========================================
+
             export NVM_DIR="/home/cityride/.nvm"
 
-            if [ -s "$NVM_DIR/nvm.sh" ]; then
-              source "$NVM_DIR/nvm.sh"
-            else
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
               echo "ERROR: NVM not found at $NVM_DIR"
               exit 1
             fi
 
-            # Use Node.js 24
+            source "$NVM_DIR/nvm.sh"
+
             nvm use 24
 
             echo ""
@@ -50,82 +50,141 @@ jobs:
             echo "PM2:"
             pm2 -v
 
-            # -----------------------------------------
-            # Go to application directory
-            # -----------------------------------------
+            # =========================================
+            # Application directory
+            # =========================================
+
             cd /var/www/cityridetaxi
 
             echo ""
+            echo "Application directory:"
+            pwd
+
+            # =========================================
+            # Pull latest code
+            # =========================================
+
+            echo ""
             echo "Pulling latest code..."
+
             git pull origin main
 
-            # -----------------------------------------
-            # Install production dependencies
-            # -----------------------------------------
+            # =========================================
+            # Install dependencies
+            # =========================================
+
             echo ""
             echo "Installing production dependencies..."
+
             npm install --omit=dev
 
-            # -----------------------------------------
+            # =========================================
             # Restart application
-            # -----------------------------------------
+            # =========================================
+
             echo ""
             echo "Restarting CityRideTaxi..."
+
             pm2 restart cityride-api --update-env
 
-            # -----------------------------------------
-            # Save PM2 process list
-            # -----------------------------------------
+            # =========================================
+            # Save PM2
+            # =========================================
+
             echo ""
             echo "Saving PM2 configuration..."
+
             pm2 save
 
-            # -----------------------------------------
+            # =========================================
             # Show PM2 status
-            # -----------------------------------------
+            # =========================================
+
             echo ""
             echo "PM2 status:"
+
             pm2 status
 
-            # -----------------------------------------
-            # Wait for Node.js application startup
-            # -----------------------------------------
+            # =========================================
+            # Wait and check application
+            # =========================================
+
             echo ""
-            echo "Waiting for application startup..."
-            sleep 10
+            echo "Waiting for CityRideTaxi application..."
 
-            # -----------------------------------------
-            # Application health check
-            # -----------------------------------------
+            sleep 5
+
             echo ""
-            echo "Testing application..."
+            echo "Checking application health..."
 
-            for i in {1..6}; do
+            HEALTHY=false
 
-              if curl -fsS http://127.0.0.1:3000/ > /dev/null; then
+            for i in {1..12}; do
+
+              echo "Health check attempt $i/12..."
+
+              if curl -fsS \
+                --connect-timeout 3 \
+                --max-time 10 \
+                http://127.0.0.1:3000/ \
+                > /dev/null; then
+
                 echo ""
-                echo "Application is healthy!"
+                echo "================================"
+                echo "Application is HEALTHY"
+                echo "================================"
+
+                HEALTHY=true
                 break
               fi
 
-              if [ "$i" -eq 6 ]; then
-                echo ""
-                echo "Application health check failed."
-                echo ""
-                echo "Recent PM2 logs:"
-                pm2 logs cityride-api --lines 50 --nostream
-                exit 1
+              if [ "$i" -lt 12 ]; then
+                echo "Application not ready yet."
+                echo "Retrying in 5 seconds..."
+                sleep 5
               fi
-
-              echo "Application not ready yet. Retrying in 5 seconds..."
-              sleep 5
 
             done
 
-            # -----------------------------------------
-            # Final deployment status
-            # -----------------------------------------
+            # =========================================
+            # Handle failed health check
+            # =========================================
+
+            if [ "$HEALTHY" != "true" ]; then
+
+              echo ""
+              echo "================================"
+              echo "APPLICATION HEALTH CHECK FAILED"
+              echo "================================"
+
+              echo ""
+              echo "PM2 status:"
+              pm2 status
+
+              echo ""
+              echo "Port 3000:"
+              ss -lntp | grep 3000 || true
+
+              echo ""
+              echo "Recent application logs:"
+              pm2 logs cityride-api \
+                --lines 100 \
+                --nostream
+
+              exit 1
+            fi
+
+            # =========================================
+            # Final verification
+            # =========================================
+
+            echo ""
+            echo "Final PM2 status:"
+
+            pm2 status
+
             echo ""
             echo "================================"
-            echo "Deployment Completed Successfully"
+            echo "CityRideTaxi Deployment Completed"
+            echo "Successfully"
             echo "================================"
