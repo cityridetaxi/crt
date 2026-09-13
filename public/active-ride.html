@@ -633,7 +633,33 @@
                 
                 // If assigned or ongoing
                 const am = window._currentActiveMission;
-                if (am && (am.status === 'assigned' || am.status === 'ongoing' || am.status === 'pending')) {
+
+                // PENDING = no driver yet → show Searching UI
+                if (am && am.status === 'pending') {
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CustomerBackgroundPlugin) {
+                        try {
+                            window.Capacitor.Plugins.CustomerBackgroundPlugin.startKeepAlive({
+                                label: 'CityRide — Searching for nearby drivers...',
+                                bookingId: String(am.id)
+                            }).catch(() => {});
+                        } catch(e) {}
+                    }
+                    const currentBookingId = am.id;
+                    window._activeBookingId = currentBookingId;
+                    detailsHtml.innerHTML = `
+                        <div style="text-align:center; padding:28px 0 20px;">
+                            <div class="loader-circle" style="margin:0 auto 18px;"></div>
+                            <div style="font-weight:800; font-size:1.15rem; margin-bottom:8px; color:var(--cr-text-main);">Searching for a Driver...</div>
+                            <div style="font-size:0.88rem; color:var(--cr-text-muted); margin-bottom:24px; line-height:1.5;">Matching you with the nearest available driver. This usually takes under 60 seconds.</div>
+                            <button onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 0})" style="width:100%; background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.3); color:#ff3b30; font-weight:800; font-size:0.9rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">
+                                ✕ Cancel Booking
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (am && (am.status === 'assigned' || am.status === 'ongoing')) {
                     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CustomerBackgroundPlugin) {
                         try {
                             const statusLabel = am.status === 'pending' ? 'Searching for nearby drivers...' : (am.status === 'assigned' ? `Driver assigned: ${am.driver_name || 'Driver'}` : 'On Trip — En route');
@@ -788,7 +814,7 @@
                             <button class="ar-action-btn" onclick="triggerSOS()"><div class="ar-action-icon sos">✱</div><span class="ar-action-label">SOS</span></button>
                         </div>
                         
-                        ${(am.status === 'assigned' || am.status === 'pending') ? `
+                        ${am.status === 'assigned' ? `
                         <button onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 1})" style="width:100%; margin-top:14px; background:rgba(255, 59, 48, 0.12); border:1px solid rgba(255, 59, 48, 0.3); color:#ff3b30; font-weight:800; font-size:0.92rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s ease;">
                             🚫 Cancel Ride
                         </button>
