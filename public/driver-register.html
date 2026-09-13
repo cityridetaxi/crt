@@ -709,7 +709,7 @@
                             const canvas = document.createElement('canvas');
                             let width = img.width;
                             let height = img.height;
-                            const max_size = 1200;
+                            const max_size = 600;
                             if (width > height && width > max_size) {
                                 height = Math.round(height * (max_size / width));
                                 width = max_size;
@@ -723,7 +723,7 @@
                             ctx.drawImage(img, 0, 0, width, height);
                             canvas.toBlob((blob) => {
                                 resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                            }, 'image/jpeg', 0.6);
+                            }, 'image/jpeg', 0.4);
                         };
                         img.onerror = () => resolve(file);
                         img.src = ev.target.result;
@@ -735,17 +735,26 @@
 
             // Remove empty optional files and compress large images to avoid 413 Payload Too Large
             btn.textContent = 'Compressing Images...';
+            let hasLargePdf = false;
             for (const pair of Array.from(formData.entries())) {
                 const key = pair[0];
                 const val = pair[1];
                 if (val instanceof File) {
                     if (val.size === 0) {
                         formData.delete(key);
-                    } else if (val.type.startsWith('image/') && val.size > 500000) {
+                    } else if (val.type.startsWith('image/') && val.size > 200000) {
                         const compressed = await compressImage(val);
                         formData.set(key, compressed);
+                    } else if (val.type.includes('pdf') && val.size > 1024 * 1024) {
+                        hasLargePdf = true;
                     }
                 }
+            }
+            if (hasLargePdf) {
+                alert('One of your PDF documents is over 1MB. Please compress it or take a photo instead to ensure successful upload.');
+                btn.disabled = false;
+                btn.textContent = 'Submit Application';
+                return;
             }
             btn.textContent = 'Transmitting...';
             
