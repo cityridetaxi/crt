@@ -693,37 +693,31 @@
             btn.textContent = 'Transmitting...';
 
             const formData = new FormData(e.target);
-            // Ensure email value is set
-            const emailInput = document.getElementById('driver-email');
-            if (emailInput && emailInput.value) {
-                formData.set('email', emailInput.value);
-            }
+            // Ensure disabled email is included
+            formData.set('email', document.getElementById('driver-email').value);
 
+            // Compress images client-side to match server sharp limits (800px, 70% quality)
+            // This ensures the multipart payload clears the Nginx client_max_body_size limit
             async function compressImage(file) {
-                if (!file.type.startsWith('image/')) return file;
                 return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            const max_size = 600;
-                            if (width > height && width > max_size) {
-                                height = Math.round(height * (max_size / width));
-                                width = max_size;
-                            } else if (height > max_size) {
-                                width = Math.round(width * (max_size / height));
-                                height = max_size;
+                            let { width, height } = img;
+                            const MAX = 800;
+                            if (width > MAX || height > MAX) {
+                                if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+                                else { width = Math.round(width * MAX / height); height = MAX; }
                             }
                             canvas.width = width;
                             canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            canvas.toBlob((blob) => {
-                                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                            }, 'image/jpeg', 0.4);
+                            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                            canvas.toBlob(
+                                (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+                                'image/jpeg', 0.7
+                            );
                         };
                         img.onerror = () => resolve(file);
                         img.src = ev.target.result;
@@ -733,94 +727,40 @@
                 });
             }
 
-            // Remove empty optional files and compress large images to avoid 413 Payload Too Large
-            btn.textContent = 'Compressing Images...';
-            let hasLargePdf = false;
-            for (const pair of Array.from(formData.entries())) {
-                const key = pair[0];
-                const val = pair[1];
-                if (val instanceof File) {
-                    if (val.size === 0) {
-                        formData.delete(key);
-                    } else if (val.type.startsWith('image/') && val.size > 200000) {
-                        const compressed = await compressImage(val);
-                        formData.set(key, compressed);
-                    } else if (val.type.includes('pdf') && val.size > 1024 * 1024) {
-                        hasLargePdf = true;
-                    }
+            btn.textContent = 'Preparing documents...';
+            for (const [key, val] of Array.from(formData.entries())) {
+                if (!(val instanceof File)) continue;
+                if (val.size === 0) { formData.delete(key); continue; }
+                if (val.type.startsWith('image/')) {
+                    formData.set(key, await compressImage(val));
                 }
             }
-            if (hasLargePdf) {
-                alert('One of your PDF documents is over 1MB. Please compress it or take a photo instead to ensure successful upload.');
-                btn.disabled = false;
-                btn.textContent = 'Submit Application';
-                return;
-            }
             btn.textContent = 'Transmitting...';
-            
-            // Use only the production API URL — no broken emulator fallbacks
-            const baseUrl = (window.API_BASE_URL || window.location.origin).replace(/\/$/, '');
-            const targetUrl = `${baseUrl}/api/driver/register`;
-
-            let submitted = false;
-            
-            // Use native window.fetch directly (bypasses Capacitor HTTP wrapper which breaks FormData)
-            const nativeFetch = window._nativeXMLHttpRequest ? 
-                function(url, opts) {
-                    return new Promise((resolve, reject) => {
-                        const xhr = new window._nativeXMLHttpRequest();
-                        xhr.open(opts.method || 'GET', url);
-                        xhr.onload = () => resolve({ 
-                            ok: xhr.status >= 200 && xhr.status < 300,
-                            status: xhr.status,
-                            text: () => Promise.resolve(xhr.responseText)
-                        });
-                        xhr.onerror = () => reject(new TypeError('Network request failed'));
-                        xhr.send(opts.body);
-                    });
-                } : window.fetch.bind(window);
 
             try {
-                const res = await nativeFetch(targetUrl, {
+                const res = await fetch(`${API_BASE_URL}/api/driver/register`, {
                     method: 'POST',
                     body: formData
                 });
 
-                const text = await res.text();
-
-                // Handle 413 Payload Too Large explicitly 
-                if (res.status === 413) {
-                    alert('Upload Error: Your documents are too large even after compression.\n\nPlease:\n• Take clearer photos with less zoom\n• Ensure photos are under 2MB each\n• Contact support if this persists');
-                    btn.disabled = false;
-                    btn.textContent = 'Submit Application';
-                    return;
-                }
-
-                let result = {};
-                try {
-                    result = JSON.parse(text);
-                } catch (e) {
-                    result = { error: `Server error (${res.status}). Please try again.` };
-                }
+                const result = await res.json();
 
                 if (res.ok) {
-                    submitted = true;
-                    alert('APPLICATION TRANSMITTED!\nYour documents have been received. We will notify you once your identity is authorized.');
+                    alert('APPLICATION TRANSMITTED!\nYour documents have been received by Ground Control. We will notify you via email once your identity is authorized.');
                     localStorage.removeItem(REG_KEY);
                     window.location.href = 'driver-login.html';
                 } else {
-                    alert('Error: ' + (result.error || result.message || 'Registration failed. Please try again.'));
+                    alert('System Error: ' + (result.error || result.message || 'Registration failed. Please try again.'));
                 }
             } catch (err) {
-                console.error('Registration fetch failed:', err);
-                alert('Network Error: Could not reach the server. Please check your internet connection and try again.');
-            }
-
-            if (!submitted) {
+                console.error('Registration failed:', err);
+                alert('Network Link failure. Document transmission failed. Please check your connection and try again.');
+            } finally {
                 btn.disabled = false;
                 btn.textContent = 'Submit Application';
             }
         });
+    
     </script>
 </body>
 
