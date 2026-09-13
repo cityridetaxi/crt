@@ -70,6 +70,34 @@ jobs:
             git pull origin main
 
             # =========================================
+            # Fix Nginx client_max_body_size for file uploads
+            # =========================================
+
+            echo ""
+            echo "Ensuring Nginx allows large file uploads..."
+
+            NGINX_CONF=$(nginx -T 2>/dev/null | grep -l "client_max_body_size" 2>/dev/null | head -1 || true)
+
+            # Update in the main nginx.conf if not already 50m
+            if grep -qr "client_max_body_size" /etc/nginx/; then
+              echo "Patching existing client_max_body_size..."
+              sudo sed -i 's/client_max_body_size\s\+[^;]*/client_max_body_size 50m/g' /etc/nginx/nginx.conf
+              sudo sed -i 's/client_max_body_size\s\+[^;]*/client_max_body_size 50m/g' /etc/nginx/sites-enabled/* 2>/dev/null || true
+              sudo sed -i 's/client_max_body_size\s\+[^;]*/client_max_body_size 50m/g' /etc/nginx/conf.d/* 2>/dev/null || true
+            else
+              echo "Injecting client_max_body_size 50m into nginx.conf http block..."
+              sudo sed -i '/^http\s*{/a\    client_max_body_size 50m;' /etc/nginx/nginx.conf
+            fi
+
+            echo "Testing Nginx config..."
+            sudo nginx -t
+
+            echo "Reloading Nginx..."
+            sudo nginx -s reload
+
+            echo "Nginx upload limit set to 50m."
+
+            # =========================================
             # Install dependencies
             # =========================================
 

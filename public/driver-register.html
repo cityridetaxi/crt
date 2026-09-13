@@ -758,75 +758,68 @@
             }
             btn.textContent = 'Transmitting...';
             
-            // Build resilient candidate endpoints for APK / Web
-            let baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
-            if (!baseUrl || baseUrl === 'http://localhost' || baseUrl === 'https://localhost') {
-                baseUrl = (window.location.protocol === 'http:' || window.location.protocol === 'https:') 
-                    ? window.location.origin 
-                    : 'http://10.0.2.2:3000';
-            }
-
-            const candidateUrls = [
-                `${baseUrl}/api/driver/register`,
-                'http://10.0.2.2:3000/api/driver/register',
-                '/api/driver/register'
-            ];
+            // Use only the production API URL — no broken emulator fallbacks
+            const baseUrl = (window.API_BASE_URL || window.location.origin).replace(/\/$/, '');
+            const targetUrl = `${baseUrl}/api/driver/register`;
 
             let submitted = false;
-            let lastErr = null;
             
-            // Bypass CapacitorHttp bug for FormData with files
-            let doFetch = window.fetch;
-            try {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-                if (iframe.contentWindow && iframe.contentWindow.fetch) {
-                    doFetch = iframe.contentWindow.fetch;
-                }
-            } catch (e) {
-                console.warn('Could not create iframe fetch bypass', e);
-            }
-
-            for (const url of candidateUrls) {
-                try {
-                    const res = await doFetch(url, {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include'
+            // Use native window.fetch directly (bypasses Capacitor HTTP wrapper which breaks FormData)
+            const nativeFetch = window._nativeXMLHttpRequest ? 
+                function(url, opts) {
+                    return new Promise((resolve, reject) => {
+                        const xhr = new window._nativeXMLHttpRequest();
+                        xhr.open(opts.method || 'GET', url);
+                        xhr.onload = () => resolve({ 
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: () => Promise.resolve(xhr.responseText)
+                        });
+                        xhr.onerror = () => reject(new TypeError('Network request failed'));
+                        xhr.send(opts.body);
                     });
+                } : window.fetch.bind(window);
 
-                    const text = await res.text();
-                    let result = {};
-                    try {
-                        result = JSON.parse(text);
-                    } catch (e) {
-                        result = { error: `Server returned non-JSON: ${res.status} - ${text.substring(0, 50)}...` };
-                    }
+            try {
+                const res = await nativeFetch(targetUrl, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    if (res.ok) {
-                        submitted = true;
-                        alert('APPLICATION TRANSMITTED!\nYour documents have been received by Ground Control. We will notify you once your identity is authorized.');
-                        localStorage.removeItem(REG_KEY);
-                        window.location.href = 'driver-login.html';
-                        break;
-                    } else {
-                        alert('System Error: ' + (result.error || 'Registration failed.'));
-                        submitted = true; // Handled error from backend
-                        break;
-                    }
-                } catch (err) {
-                    console.warn(`Attempt failed for ${url}:`, err);
-                    lastErr = err;
+                const text = await res.text();
+
+                // Handle 413 Payload Too Large explicitly 
+                if (res.status === 413) {
+                    alert('Upload Error: Your documents are too large even after compression.\n\nPlease:\n• Take clearer photos with less zoom\n• Ensure photos are under 2MB each\n• Contact support if this persists');
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Application';
+                    return;
                 }
+
+                let result = {};
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    result = { error: `Server error (${res.status}). Please try again.` };
+                }
+
+                if (res.ok) {
+                    submitted = true;
+                    alert('APPLICATION TRANSMITTED!\nYour documents have been received. We will notify you once your identity is authorized.');
+                    localStorage.removeItem(REG_KEY);
+                    window.location.href = 'driver-login.html';
+                } else {
+                    alert('Error: ' + (result.error || result.message || 'Registration failed. Please try again.'));
+                }
+            } catch (err) {
+                console.error('Registration fetch failed:', err);
+                alert('Network Error: Could not reach the server. Please check your internet connection and try again.');
             }
 
             if (!submitted) {
-                alert(`Network failure: Unable to reach Ground Control server. Please check internet connection.\nDetails: ${lastErr ? lastErr.message || lastErr : 'Unknown Error'}`);
+                btn.disabled = false;
+                btn.textContent = 'Submit Application';
             }
-
-            btn.disabled = false;
-            btn.textContent = 'Submit Application';
         });
     </script>
 </body>
