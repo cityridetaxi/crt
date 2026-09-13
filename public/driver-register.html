@@ -699,14 +699,55 @@
                 formData.set('email', emailInput.value);
             }
 
-            // Remove empty optional files to prevent payload corruption in WebView
+            async function compressImage(file) {
+                if (!file.type.startsWith('image/')) return file;
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            const max_size = 1200;
+                            if (width > height && width > max_size) {
+                                height = Math.round(height * (max_size / width));
+                                width = max_size;
+                            } else if (height > max_size) {
+                                width = Math.round(width * (max_size / height));
+                                height = max_size;
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            canvas.toBlob((blob) => {
+                                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                            }, 'image/jpeg', 0.6);
+                        };
+                        img.onerror = () => resolve(file);
+                        img.src = ev.target.result;
+                    };
+                    reader.onerror = () => resolve(file);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Remove empty optional files and compress large images to avoid 413 Payload Too Large
+            btn.textContent = 'Compressing Images...';
             for (const pair of Array.from(formData.entries())) {
                 const key = pair[0];
                 const val = pair[1];
-                if (val instanceof File && val.size === 0) {
-                    formData.delete(key);
+                if (val instanceof File) {
+                    if (val.size === 0) {
+                        formData.delete(key);
+                    } else if (val.type.startsWith('image/') && val.size > 500000) {
+                        const compressed = await compressImage(val);
+                        formData.set(key, compressed);
+                    }
                 }
             }
+            btn.textContent = 'Transmitting...';
             
             // Build resilient candidate endpoints for APK / Web
             let baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
@@ -724,15 +765,35 @@
 
             let submitted = false;
             let lastErr = null;
+            
+            // Bypass CapacitorHttp bug for FormData with files
+            let doFetch = window.fetch;
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                if (iframe.contentWindow && iframe.contentWindow.fetch) {
+                    doFetch = iframe.contentWindow.fetch;
+                }
+            } catch (e) {
+                console.warn('Could not create iframe fetch bypass', e);
+            }
 
             for (const url of candidateUrls) {
                 try {
-                    const res = await fetch(url, {
+                    const res = await doFetch(url, {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        credentials: 'include'
                     });
 
-                    const result = await res.json();
+                    const text = await res.text();
+                    let result = {};
+                    try {
+                        result = JSON.parse(text);
+                    } catch (e) {
+                        result = { error: `Server returned non-JSON: ${res.status} - ${text.substring(0, 50)}...` };
+                    }
 
                     if (res.ok) {
                         submitted = true;
@@ -752,7 +813,7 @@
             }
 
             if (!submitted) {
-                alert('Network failure: Unable to reach Ground Control server. Please check internet connection.');
+                alert(`Network failure: Unable to reach Ground Control server. Please check internet connection.\nDetails: ${lastErr ? lastErr.message || lastErr : 'Unknown Error'}`);
             }
 
             btn.disabled = false;

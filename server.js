@@ -34,6 +34,7 @@ const allowedSocketOrigins = [
     'http://127.0.0.1:3000',
     'capacitor://localhost',
     'http://localhost',
+    'https://cityridetaxi.org',
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
 ];
 
@@ -249,7 +250,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-            connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://cityridetaxi.org", "wss://cityridetaxi.org", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: null,
         },
@@ -274,7 +275,7 @@ app.use(helmet.contentSecurityPolicy({
         styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+        connectSrc: ["'self'", "http://localhost:*", "http://127.0.0.1:*", "ws://localhost:*", "ws://127.0.0.1:*", "capacitor://*", "https://cityridetaxi.org", "wss://cityridetaxi.org", "https://*.railway.app", "https://photon.komoot.io", "https://router.project-osrm.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: null,
     }

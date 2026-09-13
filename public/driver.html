@@ -549,6 +549,19 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- App Permissions -->
+                <div class="glass-card" style="margin-top: 12px;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="ph-bold ph-shield-star"></i> App Permissions</div>
+                    </div>
+                    <div class="doc-list">
+                        <div class="doc-item" style="cursor: pointer;" onclick="if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) { window.Capacitor.Plugins.DriverBackgroundPlugin.requestOverlayPermission(); }">
+                            <span class="doc-label"><i class="ph-bold ph-app-window"></i> Display Over Other Apps</span>
+                            <span class="doc-status-badge pending" style="background: rgba(0,107,58,0.1); color: var(--accent-brand);">Enable</span>
+                        </div>
+                    </div>
+                </div>
             </section>
             <!-- TAB 5: HISTORY -->
             <section id="view-history" class="tab-view hidden">
@@ -967,7 +980,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const activeJobs = await resJobs.json();
             const ongoing = activeJobs.find(j => ['assigned', 'ongoing', 'finished', 'cancel_requested'].includes(j.status));
             if (ongoing) {
-                proceedToOnline();
+                ensureNativePermissions();
             }
         }
     } catch (e) {}
@@ -1170,6 +1183,56 @@ clearInterval(radarMsgInterval);
 radarMsgInterval = null;
 }
 }
+async function ensureNativePermissions() {
+    if (window.Capacitor && window.Capacitor.Plugins) {
+        const bgPlugin = window.Capacitor.Plugins.DriverBackgroundPlugin || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('DriverBackgroundPlugin') : null);
+        
+        if (bgPlugin) {
+            if (typeof bgPlugin.requestPermissions === 'function') {
+                try { await bgPlugin.requestPermissions(); } catch(e) {}
+            }
+
+            let overlayGranted = false;
+            while (!overlayGranted) {
+                try {
+                    const permRes = await bgPlugin.checkOverlayPermission();
+                    if (permRes && permRes.granted) {
+                        overlayGranted = true;
+                        break;
+                    }
+                    const res = await Swal.fire({
+                        title: 'Permission Required',
+                        html: '<div style="font-size:0.95rem; line-height:1.5;">CityRide Partner requires <b>Display Over Other Apps</b> to show you incoming ride requests while you use navigation.<br><br>You will be redirected to Settings. Please toggle it ON, then press Back to return.</div>',
+                        icon: 'warning',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showCancelButton: true,
+                        confirmButtonText: 'Open Settings',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#006B3A'
+                    });
+                    
+                    if (res.isConfirmed) {
+                        await bgPlugin.requestOverlayPermission();
+                        await new Promise(r => setTimeout(r, 1500));
+                    } else {
+                        return; 
+                    }
+                } catch (e) {
+                    console.warn("Overlay check error:", e);
+                    break; 
+                }
+            }
+
+            if (!window.batteryOptPrompted) {
+                window.batteryOptPrompted = true;
+                bgPlugin.requestIgnoreBatteryOptimizations().catch(() => {});
+            }
+        }
+    }
+    proceedToOnline();
+}
+
 async function proceedToOnline() {
     const btn = document.getElementById('duty-toggle-btn');
     const txt = document.getElementById('duty-status-txt');
@@ -1187,6 +1250,7 @@ async function proceedToOnline() {
     document.getElementById('opportunities-container').classList.remove('hidden');
     const skeleton = document.getElementById('opportunities-skeleton');
     if (skeleton) skeleton.classList.remove('hidden');
+    
     initializeDriverMap();
     startGpsTracking();
     startOpportunityPolling();
@@ -1199,7 +1263,7 @@ async function proceedToOnline() {
         updateBackendDriverStatus(true);
     }
 
-    // Start Native Driver Background Duty & Check Overlay Permission for Mini Mode Popup
+    // Start Native Driver Background Duty AFTER permissions are guaranteed
     if (window.Capacitor && window.Capacitor.Plugins) {
         const driverBgPlugin = window.Capacitor.Plugins.DriverBackgroundPlugin || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('DriverBackgroundPlugin') : null);
         if (driverBgPlugin) {
@@ -1210,22 +1274,6 @@ async function proceedToOnline() {
                     driverName: driverDataObj.name || 'Driver',
                     apiUrl: window.API_BASE_URL || ''
                 });
-                
-                const permRes = await driverBgPlugin.checkOverlayPermission();
-                if (permRes && !permRes.granted) {
-                    Swal.fire({
-                        title: 'Overlay Permission Needed',
-                        text: 'Please allow "Display over other apps" permission so CityRide Partner can shrink into Mini Mode Overlay when minimized.',
-                        icon: 'info',
-                        showCancelButton: true,
-                        confirmButtonText: 'Grant Permission',
-                        confirmButtonColor: '#006B3A'
-                    }).then(async (res) => {
-                        if (res.isConfirmed) {
-                            await driverBgPlugin.requestOverlayPermission();
-                        }
-                    });
-                }
             } catch(e) {
                 console.warn("DriverBackgroundPlugin startDuty error:", e);
             }
@@ -1402,14 +1450,14 @@ async function toggleDutyStatus() {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         Swal.close();
-                        proceedToOnline();
+                        ensureNativePermissions();
                     },
                     (error) => {
                         console.warn('High accuracy GPS failed, trying fallback...', error);
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
                                 Swal.close();
-                                proceedToOnline();
+                                ensureNativePermissions();
                             },
                             (err2) => {
                                 Swal.close();
@@ -1442,6 +1490,11 @@ async function toggleDutyStatus() {
             oppsPanel.classList.add('hidden');
             document.getElementById('searching-panel').classList.add('hidden');
             document.getElementById('opportunities-container').classList.add('hidden');
+            
+            // Stop background native location tracking service
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.DriverBackgroundPlugin) {
+                window.Capacitor.Plugins.DriverBackgroundPlugin.stopBackgroundService().catch(console.error);
+            }
             stopRadarMessageCycle();
             stopGpsTracking();
             stopOpportunityPolling();
@@ -2392,6 +2445,7 @@ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Dri
             pickup: job.pickup_loc || job.pickup || 'Pickup Location',
             drop: job.drop_loc || job.drop || 'Drop Location',
             fare: job.fare ? `₹${job.fare}` : (job.estimated_price ? `₹${job.estimated_price}` : '₹150'),
+            km: `${tripDistVal}`,
             pickupDist: pDistStr,
             tripDist: `${tripDistVal}${tripDurVal}`,
             vehicleType: (job.vehicle_type || 'CAR').toUpperCase()

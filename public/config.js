@@ -12,8 +12,8 @@ const isNativeApp = (
 );
 
 // 2. Default Backend Server Resolution
-// Default production server backend for APKs: https://crtaxi.up.railway.app
-let DEFAULT_SERVER_URL = "https://crtaxi.up.railway.app"; 
+// Default production server backend for APKs: https://cityridetaxi.org
+let DEFAULT_SERVER_URL = "https://cityridetaxi.org"; 
 
 let resolvedApiBaseUrl = window.API_BASE_URL || window.SERVER_URL || "";
 

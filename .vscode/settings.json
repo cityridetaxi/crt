@@ -1,0 +1,14 @@
+{
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/fresh-apks/**",
+        "**/mobile-app/**",
+        "**/capacitor-apps/**"
+    ],
+    "java.project.sourcePaths": [],
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/fresh-apks/**/android/.gradle/**": true,
+        "**/fresh-apks/**/android/build/**": true
+    }
+}
