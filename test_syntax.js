@@ -1,352 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityRideTaxi | Active Ride Tracking</title>
-    <link rel="icon" type="image/png" href="car.png">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://cityridetaxi.org wss://cityridetaxi.org https://*.railway.app https://unpkg.com https://cdn.jsdelivr.net https://router.project-osrm.org https://nominatim.openstreetmap.org https://photon.komoot.io;">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Premium CSS -->
-    <link rel="stylesheet" href="customer.css?v=2">
-    
-    <!-- Scripts & Maps -->
-    <script src="config.js" defer></script>
-    <script src="notifications.js?v=2" defer></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" defer></script>
-
-    <style>
-        /* ===== RAPIDO-STYLE DRIVER ETA CARD ===== */
-        #driver-eta-card {
-            position: fixed;
-            top: 72px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            display: none;
-            background: var(--cr-surface-light, #fff);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-            padding: 12px 20px;
-            min-width: 260px;
-            max-width: 340px;
-            width: calc(100% - 40px);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0,107,58,0.12);
-            animation: etaSlideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        #driver-eta-card.visible { display: flex; align-items: center; gap: 14px; }
-        @keyframes etaSlideDown {
-            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-            to   { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        /* Premium Invoice Modal Overlay & Z-Index Fix */
-        .swal2-container {
-            z-index: 99999 !important;
-        }
-        .swal2-popup.premium-invoice-modal {
-            padding: 1.25rem !important;
-            border-radius: 20px !important;
-            background: #14161d !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
-            max-width: 92vw !important;
-            width: 460px !important;
-        }
-        .swal2-html-container {
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow-x: hidden !important;
-            text-align: left !important;
-            width: 100% !important;
-            display: block !important;
-        }
-        #cityride-invoice-wrapper * {
-            box-sizing: border-box !important;
-        }
-        .eta-car-icon {
-            width: 48px; height: 48px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--cr-primary, #006B3A), #009954);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; position: relative;
-            box-shadow: 0 4px 14px rgba(0,107,58,0.3);
-        }
-        .eta-car-icon::after {
-            content: '';
-            position: absolute; inset: -5px;
-            border: 2px solid rgba(0,107,58,0.3);
-            border-radius: 50%;
-            animation: etaPulse 1.8s infinite ease-out;
-        }
-        @keyframes etaPulse {
-            0%   { transform: scale(0.88); opacity: 0.7; }
-            100% { transform: scale(1.3);  opacity: 0; }
-        }
-        .eta-info { flex: 1; min-width: 0; }
-        .eta-status-label {
-            font-size: 0.68rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.6px;
-            color: var(--cr-primary, #006B3A);
-            margin-bottom: 3px;
-        }
-        .eta-main-row { display: flex; align-items: baseline; gap: 6px; }
-        .eta-time {
-            font-size: 1.5rem; font-weight: 800;
-            color: var(--cr-text-main, #1a1a1a);
-            line-height: 1;
-        }
-        .eta-time-unit { font-size: 0.8rem; font-weight: 600; color: var(--cr-text-muted); }
-        .eta-divider {
-            width: 1px; height: 28px;
-            background: var(--cr-border-light, #e5e5e5);
-            flex-shrink: 0;
-        }
-        .eta-dist-col { text-align: right; flex-shrink: 0; }
-        .eta-dist-val {
-            font-size: 1.1rem; font-weight: 800;
-            color: var(--cr-text-main, #1a1a1a);
-        }
-        .eta-dist-unit { font-size: 0.7rem; font-weight: 600; color: var(--cr-text-muted); margin-top: 1px; }
-
-        .chat-unread-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 12px;
-            height: 12px;
-            background: #e53935;
-            border-radius: 50%;
-            border: 2px solid var(--cr-card-bg);
-            display: none;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        .chat-unread-badge.active {
-            display: block;
-        }
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-        /* Specific overrides for dashboard.html Luxe layout */
-        body { background: var(--cr-bg); overflow: hidden; } /* map is background */
-        #mission-map { position: fixed; inset: 0; z-index: 0; }
-        
-        .luxe-top-bar { position: fixed; top: 0; left: 0; right: 0; padding: 16px; display: flex; align-items: center; gap: 16px; background: linear-gradient(rgba(232, 239, 232, 0.9), transparent); z-index: 10; }
-        .back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        
-        /* The main container for active ride info */
-        #active-mission-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.86);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border-top: 1px solid rgba(255, 255, 255, 0.7);
-            border-radius: var(--cr-radius-xl) var(--cr-radius-xl) 0 0;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.12);
-            z-index: 20;
-            padding: 24px 24px 32px 24px;
-            max-height: 58vh;
-            overflow-y: auto;
-            transform: translateY(0);
-            transition: transform 0.3s ease-out;
-        }
-        #active-mission-container.hidden { transform: translateY(120%); display: block !important; } /* override utility hidden for animation */
-        
-        .drag-handle { width: 40px; height: 4px; background: var(--cr-border-light); border-radius: 2px; margin: 0 auto 16px; }
-
-        /* Dashboard specific fallback layout (Ride History) */
-        .history-panel { position: relative; z-index: 15; padding: 80px 16px 100px; max-width: 1200px; margin: 0 auto; height: 100vh; overflow-y: auto; background: var(--cr-bg); }
-        .history-panel.hidden { display: none; }
-        
-        .cr-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-        .cr-stat-card { background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: var(--cr-radius-lg); padding: 16px; box-shadow: var(--cr-shadow-sm); }
-        
-        .rides-table { width: 100%; display: flex; flex-direction: column; gap: 16px; }
-        .rides-table tr { background: var(--cr-surface-light); border-radius: var(--cr-radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--cr-shadow-sm); }
-        .rides-table td { display: flex; justify-content: space-between; font-size: 0.9rem; }
-        .rides-table td::before { content: attr(data-label); font-weight: 600; color: var(--cr-text-muted); }
-        .rides-table thead { display: none; }
-
-        .btn-cancel-ride { background: var(--cr-bg); color: var(--cr-danger); border: none; padding: 8px 16px; border-radius: var(--cr-radius-pill); font-weight: 700; cursor: pointer; }
-        .btn-rebook-ride { background: var(--cr-primary); color: white; border: none; padding: 8px 16px; border-radius: var(--cr-radius-pill); font-weight: 700; cursor: pointer; }
-        .btn-invoice-eye { background: var(--cr-surface); border: none; padding: 8px; border-radius: 50%; color: var(--cr-primary); cursor: pointer; }
-
-        /* CALL OVERLAY */
-        #ar-calling-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            z-index: 500; display: none;
-            align-items: flex-end; justify-content: center;
-        }
-        #ar-calling-overlay.active { display: flex; animation: arFadeIn 0.2s ease; }
-        @keyframes arFadeIn { from{opacity:0} to{opacity:1} }
-        .ar-calling-card {
-            background: var(--cr-surface-light);
-            border-radius: 32px 32px 0 0;
-            width: 100%; max-width: 480px;
-            padding: 32px 24px 56px;
-            text-align: center;
-            animation: arSlideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes arSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-        .ar-calling-avatar-wrap { position: relative; display: inline-block; margin-bottom: 24px; }
-        .ar-calling-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 3px solid var(--cr-primary); }
-        .ar-calling-ring {
-            position: absolute; border-radius: 50%;
-            border: 2px solid rgba(0,107,58,0.4); opacity: 0;
-            animation: arRingPulse 2.4s infinite ease-out;
-        }
-        .ar-calling-ring:nth-child(1){inset:-10px;animation-delay:0s}
-        .ar-calling-ring:nth-child(2){inset:-20px;animation-delay:0.6s}
-        .ar-calling-ring:nth-child(3){inset:-30px;animation-delay:1.2s}
-        @keyframes arRingPulse { 0%{opacity:0.6;transform:scale(0.9)} 100%{opacity:0;transform:scale(1.15)} }
-        .ar-calling-status { font-size:0.8rem; color:var(--cr-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; animation:arBlink 1.5s infinite; }
-        @keyframes arBlink { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .ar-calling-name { font-size:1.5rem; font-weight:800; color:var(--cr-text-main); margin-bottom:6px; }
-        .ar-calling-number { font-size:0.9rem; color:var(--cr-text-muted); margin-bottom:44px; }
-        .ar-endcall-btn {
-            width:66px; height:66px; background:#DC2626;
-            border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
-            cursor:pointer; border:none;
-            box-shadow:0 6px 24px rgba(220,38,38,0.4);
-            transition:transform 0.15s;
-        }
-        .ar-endcall-btn:active { transform:scale(0.88); }
-        .ar-call-label { font-size:0.72rem; color:var(--cr-text-muted); margin-top:8px; font-weight:600; }
-    </style>
-</head>
-
-<body>
-
-    <!-- IN-APP CALL OVERLAY -->
 
 
-    <!-- Loading Splash Screen (Admin Panel Style) -->
-    <div id="splash-screen">
-        <div class="splash-grid"></div>
-        <div class="splash-orb"></div>
-        <div class="splash-ring"></div>
-        <div class="splash-ring splash-ring-2"></div>
-        <div class="splash-logo-wrap">
-            <img src="logo.png" class="splash-logo" alt="CityRideTaxi" width="220" height="160">
-            <div class="splash-brand"><span>CityRide</span>Taxi</div>
-            <div class="splash-tagline">Active Ride Tracking</div>
-        </div>
-        <div class="splash-road-wrap">
-            <div class="splash-road"></div>
-            <svg class="splash-car" width="64" height="28" viewBox="0 0 64 28" fill="none">
-                <rect x="8" y="12" width="48" height="12" rx="4" fill="#93C572" />
-                <path d="M18 12 L22 4 L42 4 L46 12Z" fill="#84B067" />
-                <rect x="23" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
-                <rect x="33" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
-                <circle cx="18" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
-                <circle cx="18" cy="24" r="1.5" fill="#888" />
-                <circle cx="46" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
-                <circle cx="46" cy="24" r="1.5" fill="#888" />
-                <ellipse cx="57" cy="16" rx="5" ry="3" fill="rgba(255,220,100,0.5)" />
-                <rect x="54" y="14" width="3" height="4" rx="1" fill="#ffd700" />
-            </svg>
-        </div>
-        <div class="splash-progress-wrap">
-            <div class="splash-progress-bar"></div>
-        </div>
-        <div class="splash-status">Loading Trip Monitor...</div>
-    </div>
 
-    <!-- Active Trip Map -->
-    <div id="mission-map"></div>
 
-    <!-- Active Ride Top Bar -->
-    <div class="luxe-top-bar" id="active-top-bar" style="display:none;">
-        <div class="back-btn" onclick="handleBackNavigation()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-        </div>
-        <img src="logo.png" alt="Logo" style="height:24px;">
-        <span style="font-weight:600; font-size:1rem;">Active Ride</span>
-        <div style="margin-left:auto;">
-            <button class="cr-notif-bell-btn" title="Activity Notifications">
-                <span style="font-size:1.1rem;">🔔</span>
-                <span class="cr-notif-badge"></span>
-            </button>
-        </div>
-    </div>
 
-    <!-- Floating Notification Bell -->
-    <div style="position:fixed; top:16px; right:16px; z-index:10100;" id="floating-notif-bell-wrap">
-        <button class="cr-notif-bell-btn" title="Activity Notifications">
-            <span style="font-size:1.1rem;">🔔</span>
-            <span class="cr-notif-badge"></span>
-        </button>
-    </div>
-
-    <!-- Rapido-Style Driver ETA Card -->
-    <div id="driver-eta-card">
-        <div class="eta-car-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" fill="white">
-                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-            </svg>
-        </div>
-        <div class="eta-info">
-            <div class="eta-status-label" id="eta-status-label">Driver on the way</div>
-            <div class="eta-main-row">
-                <span class="eta-time" id="eta-time-val">--</span>
-                <span class="eta-time-unit">min away</span>
-            </div>
-        </div>
-        <div class="eta-divider"></div>
-        <div class="eta-dist-col">
-            <div class="eta-dist-val" id="eta-dist-val">--</div>
-            <div class="eta-dist-unit">km</div>
-        </div>
-    </div>
-
-    <!-- Floating Map Pill -->
-    <div style="position:fixed; top:80px; left:16px; z-index:10; display:none;" id="gps-tracking-pill">
-        <div class="map-pill gps">Live GPS Tracking</div>
-    </div>
-    <div class="map-tools" id="active-map-tools" style="display:none;">
-        <button class="map-tool-btn">🎯</button>
-    </div>
-
-    <!-- ACTIVE RIDE BOTTOM SHEET -->
-    <div id="active-mission-container" class="hidden">
-        <div class="drag-handle"></div>
-        <div id="deviation-warning" style="display:none; background:var(--cr-accent-red); color:var(--cr-danger); padding:12px; border-radius:var(--cr-radius-sm); font-weight:600; font-size:0.85rem; margin-bottom:16px; text-align:center;">
-            ⚠️ Route Deviation Detected! Fare recalculating.
-        </div>
-
-        <div id="active-details">
-            <!-- JS injects content here. We will intercept/style it via global CSS overrides in JS or here -->
-            <!-- The standard inject contains status, driver details, etc. -->
-        </div>
-    </div>
-
-    <!-- RIDE HISTORY (Dashboard View) -->
-    
-
-    
-
-    <!-- Support placeholder -->
-    <span id="active-status" style="display:none;"></span>
-
-    <!-- ADDITIONAL CUSTOMER MODALS -->
-    <!-- Profile Modal -->
-    <!-- Settings Modal -->
-    <!-- Support Modal -->
-    <script>
         function getTripTimerText(elapsedSecs) {
             if (elapsedSecs === undefined || elapsedSecs === null || isNaN(elapsedSecs)) return '00:00:00';
             const diff = Math.max(0, parseInt(elapsedSecs));
@@ -459,10 +115,8 @@
                 window.location.href = 'auth.html';
             });
         }
-    </script>
+    
 
-    <!-- Script Overrides for Luxe Injection -->
-    <script>
         document.addEventListener('DOMContentLoaded', () => {
             function getPassengerWaitingTimerHtml(elapsedSecs) {
                 return `<span id="passenger-waiting-timer" style="color:#93C572; font-weight:700;">Driver at pickup location</span>`;
@@ -618,11 +272,11 @@
                                 <div style="background:var(--cr-bg); color:var(--cr-primary); padding:6px 12px; border-radius:var(--cr-radius-pill); font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:6px;">✓ Top Rated Only</div>
                                 <div style="background:#DBEAFE; color:var(--cr-accent-blue); padding:6px 12px; border-radius:var(--cr-radius-pill); font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:6px;">🚗 Green Choice</div>
                             </div>
-                            <button onclick="var c=document.querySelector('#hidden-cancel button'); if(c) c.click();" class="cr-btn cr-btn-light" style="width:100%; border:1px solid var(--cr-border-light); font-weight:600; color:var(--cr-text-main);">✕ Cancel Booking</button>
+                            <button onclick="document.querySelector('#hidden-cancel button')?.click()" class="cr-btn cr-btn-light" style="width:100%; border:1px solid var(--cr-border-light); font-weight:600; color:var(--cr-text-main);">✕ Cancel Booking</button>
                             <button onclick="window.location.href='dashboard.html'" class="cr-btn cr-btn-light" style="width:100%; margin-top:12px; border:none; font-weight:600; color:var(--cr-text-muted); background:transparent; box-shadow:none;">← Back to Dashboard</button>
                         </div>
                         <div style="display:none;" id="hidden-cancel">
-                            ${(detailsHtml.querySelector('button[onclick*="cancelRide"]') || {}).outerHTML || ''}
+                            ${detailsHtml.querySelector('button[onclick*="cancelRide"]')?.outerHTML || ''}
                         </div>
                     `;
                     return;
@@ -651,7 +305,7 @@
                             <div class="loader-circle" style="margin:0 auto 18px;"></div>
                             <div style="font-weight:800; font-size:1.15rem; margin-bottom:8px; color:var(--cr-text-main);">Searching for a Driver...</div>
                             <div style="font-size:0.88rem; color:var(--cr-text-muted); margin-bottom:24px; line-height:1.5;">Matching you with the nearest available driver. This usually takes under 60 seconds.</div>
-                            <button onclick="cancelRide(${currentBookingId}, ${(JSON.parse(localStorage.getItem('cityride_member') || '{}') || {}).id || 0})" style="width:100%; background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.3); color:#ff3b30; font-weight:800; font-size:0.9rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">
+                            <button onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 0})" style="width:100%; background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.3); color:#ff3b30; font-weight:800; font-size:0.9rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">
                                 ✕ Cancel Booking
                             </button>
                         </div>
@@ -815,7 +469,7 @@
                         </div>
                         
                         ${am.status === 'assigned' ? `
-                        <button onclick="cancelRide(${currentBookingId}, ${(JSON.parse(localStorage.getItem('cityride_member') || '{}') || {}).id || 1})" style="width:100%; margin-top:14px; background:rgba(255, 59, 48, 0.12); border:1px solid rgba(255, 59, 48, 0.3); color:#ff3b30; font-weight:800; font-size:0.92rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s ease;">
+                        <button onclick="cancelRide(${currentBookingId}, ${JSON.parse(localStorage.getItem('cityride_member'))?.id || 1})" style="width:100%; margin-top:14px; background:rgba(255, 59, 48, 0.12); border:1px solid rgba(255, 59, 48, 0.3); color:#ff3b30; font-weight:800; font-size:0.92rem; padding:12px; border-radius:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s ease;">
                             🚫 Cancel Ride
                         </button>
                         ` : ''}
@@ -823,10 +477,8 @@
                 }
             }
         });
-    </script>
-
-
-    <script>(function() {
+    
+(function() {
 const originalFetch = window.fetch;
 function getLoginRedirect(url) {
     const path = (window.location.pathname || '').toLowerCase();
@@ -969,7 +621,7 @@ function initUserSocket(user) {
     try { parsed = raw ? JSON.parse(raw) : null; } catch (e) {}
 
     const userSocket = io({
-        auth: { token: (parsed && parsed.token) || '' },
+        auth: { token: parsed?.token || '' },
         transports: ['websocket', 'polling'],
         reconnectionDelay: 2000,
         reconnectionAttempts: 20
@@ -1793,7 +1445,7 @@ async function loadDashboardData(user) {
                                     const r = await fetch(`${API_BASE_URL}/api/proxy/geocode?q=${encodeURIComponent(addr)}&limit=1&lon=80.2707&lat=13.0827`);
                                     if (!r.ok) return null;
                                     const d = await r.json();
-                                    return (d.features && d.features[0] && d.features[0].geometry ? d.features[0].geometry.coordinates : null);
+                                    return d.features[0]?.geometry.coordinates;
                                 } catch (e) { return null; }
                             };
                             
@@ -1868,7 +1520,7 @@ async function loadDashboardData(user) {
                                     const r = await fetch(`${API_BASE_URL}/api/proxy/geocode?q=${encodeURIComponent(addr)}&limit=1&lon=80.2707&lat=13.0827`);
                                     if (!r.ok) return null;
                                     const d = await r.json();
-                                    return (d.features && d.features[0] && d.features[0].geometry ? d.features[0].geometry.coordinates : null);
+                                    return d.features[0]?.geometry.coordinates;
                                 } catch (e) { return null; }
                             };
                             const pCoords = await getCoords(activeMission.pickup_loc, activeMission.pickup_coords);
@@ -2515,7 +2167,7 @@ function getCustomerAuthToken() {
     if (!token) {
         try {
             const member = JSON.parse(localStorage.getItem('cityride_member'));
-            token = (member && member.token);
+            token = member?.token;
         } catch(e) {}
     }
     return token || '';
@@ -2883,9 +2535,9 @@ async function showInvoiceModal(trip) {
 }
 window.openTripInvoice = openTripInvoice;
 window.showInvoiceModal = showInvoiceModal;
-</script>
-    <script src="alert.js?v=2"></script>
-    <script>window.addEventListener('load', () => {
+
+
+window.addEventListener('load', () => {
 const splash = document.getElementById('splash-screen');
 if (splash) {
 setTimeout(() => {
@@ -2893,10 +2545,9 @@ splash.classList.add('splash-hidden');
 document.body.style.setProperty('overflow', 'auto', 'important');
 }, 1600);
 }
-});</script>
-    <!-- Socket.IO Client -->
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
+});
+
+
     // ─── CHANGE PICKUP LOCATION (DIRECT INTERACTIVE MAP PICKER) ───
     async function promptChangePickupLocation(bookingId, currentLoc, usedCount, currentCoords) {
         const used = parseInt(usedCount) || 0;
@@ -2941,7 +2592,7 @@ document.body.style.setProperty('overflow', 'auto', 'important');
     }
 
     async function submitInvoiceRating(bookingId) {
-        const comment = ((document.getElementById('invoice-modal-comment') || {}).value || '').trim();
+        const comment = (document.getElementById('invoice-modal-comment')?.value || '').trim();
         try {
             await fetch('/api/user/rate-ride', {
                 method: 'POST',
@@ -3209,72 +2860,4 @@ document.body.style.setProperty('overflow', 'auto', 'important');
             console.warn('Customer socket init error:', e.message);
         }
     })();
-    </script>
-
-    <!-- TRIP COMPLETED FARE INVOICE MODAL -->
-    <div id="fare-completed-modal" class="map-modal" style="display:none; z-index:99999; position:fixed; inset:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
-        <div class="map-modal-content" style="max-width:480px; width:92%; background:#0f1118; border-radius:24px; border:1px solid rgba(255,255,255,0.12); overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,0.85); font-family:Inter,sans-serif; text-align:center;">
-            
-            <!-- Header banner -->
-            <div style="background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); padding:28px 20px 20px; position:relative;">
-                <div style="width:64px; height:64px; background:rgba(255,255,255,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:2rem; backdrop-filter:blur(10px);">
-                    🎉
-                </div>
-                <h2 style="color:#ffffff; font-size:1.4rem; font-weight:800; margin:0 0 4px;">Trip Completed!</h2>
-                <p style="color:rgba(255,255,255,0.85); font-size:0.85rem; margin:0;">Thank you for riding with CityRide</p>
-            </div>
-
-            <div style="padding:24px 20px;">
-                <!-- Fare Display Box -->
-                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:18px; margin-bottom:20px;">
-                    <div style="font-size:0.75rem; text-transform:uppercase; color:#888; font-weight:700; letter-spacing:0.5px; margin-bottom:6px;">Total Fare Amount</div>
-                    <div style="font-size:2.4rem; font-weight:900; color:#00ff66; line-height:1;" id="fare-modal-amount">\u20B90</div>
-                    <div style="font-size:0.8rem; color:#aaa; font-weight:600; margin-top:6px;" id="fare-modal-payment-status">Payment Received</div>
-                </div>
-
-                <!-- Ride Summary details -->
-                <div style="text-align:left; background:rgba(255,255,255,0.02); border-radius:14px; padding:14px 16px; margin-bottom:20px; display:flex; flex-direction:column; gap:10px; font-size:0.85rem; border:1px solid rgba(255,255,255,0.04);">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#888;">Booking ID:</span>
-                        <strong style="color:#fff;" id="fare-modal-id">#B0000</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#888;">Distance:</span>
-                        <strong style="color:#fff;" id="fare-modal-dist">0.0 KM</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#888;">Captain:</span>
-                        <strong style="color:#fff;" id="fare-modal-driver">CityRide Captain</strong>
-                    </div>
-                    <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px; margin-top:4px;">
-                        <div style="color:#888; font-size:0.75rem;">Pickup Location:</div>
-                        <div style="color:#ddd; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="fare-modal-pickup">-</div>
-                    </div>
-                    <div>
-                        <div style="color:#888; font-size:0.75rem;">Drop Destination:</div>
-                        <div style="color:#ddd; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="fare-modal-drop">-</div>
-                    </div>
-                </div>
-
-                <!-- Driver Rating Section -->
-                <div style="margin-bottom:20px;">
-                    <div style="font-size:0.9rem; font-weight:700; color:#fff; margin-bottom:8px;">Rate your experience</div>
-                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;" id="fare-modal-stars">
-                        <span onclick="setFareModalRating(1)" class="fare-star" data-rating="1" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
-                        <span onclick="setFareModalRating(2)" class="fare-star" data-rating="2" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
-                        <span onclick="setFareModalRating(3)" class="fare-star" data-rating="3" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
-                        <span onclick="setFareModalRating(4)" class="fare-star" data-rating="4" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
-                        <span onclick="setFareModalRating(5)" class="fare-star" data-rating="5" style="font-size:2.2rem; cursor:pointer; color:#ffcc00; transition:transform 0.15s;">★</span>
-                    </div>
-                    <textarea id="fare-modal-comment" placeholder="Optional feedback for your driver..." style="width:100%; height:60px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; padding:10px; font-size:0.85rem; resize:none; box-sizing:border-box; outline:none;"></textarea>
-                </div>
-
-                <!-- Submit Button -->
-                <button onclick="submitFareModalRating()" style="width:100%; height:48px; background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); color:#fff; border:none; border-radius:14px; font-weight:800; font-size:1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,107,58,0.4);">
-                    Submit Rating & Done
-                </button>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+    
