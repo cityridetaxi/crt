@@ -1719,111 +1719,13 @@ async function startGpsTracking() {
 
     if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
     gpsWatchId = navigator.geolocation.watchPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const acc = pos.coords.accuracy;
-        updateGpsUI('locked', acc);
-        updateDriverLocationOnMap(lat, lng);
-
-        // --- Google Maps-style Speed Calculation ---
-        // Priority 1: Hardware GPS speed (native chipset Doppler reading)
-        // Priority 2: Haversine distance/time fallback, heavily filtered
-        let rawSpeedKmh = 0;
-        let nativeSpeedAvailable = false;
-        let updateLastGpsCoords = false;
-
-        // Trust native speed over 0 m/s (Doppler is highly accurate)
-        if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
-            rawSpeedKmh = pos.coords.speed * 3.6;
-            nativeSpeedAvailable = true;
-        }
-
-        const prevCoords = window.lastGpsCoords;
-        if (!nativeSpeedAvailable) {
-            if (prevCoords) {
-                const timeDiffSec = (Date.now() - prevCoords.time) / 1000;
-                // Only use Haversine if >= 1s has passed to avoid GPS jitter magnification
-                if (timeDiffSec >= 1.0) {
-                    const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
-                    // Ignore massive jitter when accuracy is bad
-                    if (acc < 50) {
-                        rawSpeedKmh = distKm / (timeDiffSec / 3600);
-                    } else {
-                        rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-                    }
-                    updateLastGpsCoords = true; // Safe to anchor next interval
-                } else {
-                    rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-                    // Do NOT update lastGpsCoords here, let the time delta grow
-                }
-            } else {
-                updateLastGpsCoords = true;
-            }
-        } else {
-            updateLastGpsCoords = true;
-        }
-
-        // Cap anomalous speeds (e.g., GPS glitch showing 300km/h)
-        if (rawSpeedKmh > 160) {
-            rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-        }
-
-        // EMA smoothing for stable speedometer UI (Google Maps uses heavy smoothing)
-        if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
-        window.lastSmoothedSpeedKmh = 0.2 * rawSpeedKmh + 0.8 * window.lastSmoothedSpeedKmh;
-        
-        // Snap to zero if very slow to prevent drift (UI ONLY)
-        if (window.lastSmoothedSpeedKmh < 3) window.lastSmoothedSpeedKmh = 0;
-
-        const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
-
-        if (updateLastGpsCoords) {
-            window.lastGpsCoords = { lat, lng, time: Date.now() };
-        }
-        
-        const floatSpeedVal = document.getElementById('float-speed-val');
-        if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
-
-        // Kalman filter for smooth position
-        if (!window.clientKalmanFilter) window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
-        const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
-
-        // --- Odometer Distance Accumulation ---
-        // DECOUPLED FROM SPEEDOMETER TO PREVENT PROFIT LOSS
-        if (window.lastOdoCalcTime && window.lastSmoothedCoords) {
-            const dtSeconds = (Date.now() - window.lastOdoCalcTime) / 1000.0;
-            if (dtSeconds > 0) {
-                const segmentDistKm = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
-                
-                // Use backend sanity checks: max 45 m/s, ignore noise < 0.001km or < 0.05 m/s
-                const calculatedSpeedMPS = (segmentDistKm * 1000.0) / Math.max(0.1, dtSeconds);
-                if (calculatedSpeedMPS <= 45.0 && segmentDistKm >= 0.001 && calculatedSpeedMPS >= 0.05) {
-                    window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + segmentDistKm;
-                    localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
-                }
-            }
-        }
-        window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
-        window.lastOdoCalcTime = Date.now();
-
-        if (activeRideObj && activeRideObj.status === 'ongoing') {
-            const offlineKey = `offline_gps_${acceptedOpportunityId}`;
-            const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
-            const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
-            if (!lastLog || (Date.now() - lastLog.time >= 1000)) {
-                offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: Date.now() });
-                localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
-            }
-        }
-        const now = Date.now();
-        if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
-            lastGpsSendTime = now;
-            sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
-        }
-        if (!window.lastIdleSyncTime || (now - window.lastIdleSyncTime >= 15000)) {
-            window.lastIdleSyncTime = now;
-            updateBackendDriverStatus(isOnline, lat, lng);
-        }
+        processDriverLocationUpdate(
+            pos.coords.latitude, 
+            pos.coords.longitude, 
+            pos.coords.accuracy, 
+            pos.coords.speed, 
+            Date.now()
+        );
     }, (err) => {
         console.warn('GPS Fail:', err.message);
         if (err.message.includes('Only secure origins are allowed') || err.message.includes('secure origin') || err.code === 1) {
@@ -1922,82 +1824,89 @@ async function enableFloatingWidgetPrompt() {
     });
 }
 
-// Called by native Capacitor DriverBackgroundPlugin locationUpdate events.
-// Mirrors the same speed/odometer logic as the watchPosition callback inline.
+// Cal// Mirrors the same speed/odometer logic as the watchPosition callback inline.
 function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     updateGpsUI('locked', acc);
     updateDriverLocationOnMap(lat, lng);
 
     const now = timeStamp || Date.now();
-    const prevCoords = window.lastGpsCoords;
 
-    // Google Maps-style speed: native hardware speed first, haversine fallback heavily filtered
-    let rawSpeedKmh = 0;
-    let nativeSpeedAvailable = false;
-
+    // Speed calculation
+    let speedKmh = 0;
     if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
-        rawSpeedKmh = speedMps * 3.6;
-        nativeSpeedAvailable = true;
-    }
-
-    if (!nativeSpeedAvailable) {
-        if (prevCoords) {
-            const timeDiffSec = (now - prevCoords.time) / 1000;
-            if (timeDiffSec >= 1.0) {
-                const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
-                if (acc < 50) {
-                    rawSpeedKmh = distKm / (timeDiffSec / 3600);
-                } else {
-                    rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-                }
-            } else {
-                rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-            }
+        speedKmh = Math.round(speedMps * 3.6);
+    } else if (window.lastGpsCoords) {
+        const timeDiffSec = (now - window.lastGpsCoords.time) / 1000;
+        if (timeDiffSec > 0.5) {
+            const distKm = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, lat, lng);
+            speedKmh = Math.round(distKm / (timeDiffSec / 3600));
+            if (speedKmh > 160) speedKmh = 0; // Filter out GPS spikes
         }
     }
-
-    if (rawSpeedKmh > 160) {
-        rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
-    }
-
-    if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
-    window.lastSmoothedSpeedKmh = 0.2 * rawSpeedKmh + 0.8 * window.lastSmoothedSpeedKmh;
-    if (window.lastSmoothedSpeedKmh < 3) window.lastSmoothedSpeedKmh = 0;
-
-    const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
-
     window.lastGpsCoords = { lat, lng, time: now };
+
     const floatSpeedVal = document.getElementById('float-speed-val');
     if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
 
-    if (!window.clientKalmanFilter) window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
+    // Client-side real-time odometer accumulator (ALWAYS RUNS WHEN ONLINE)
+    if (!window.clientKalmanFilter) {
+        window.clientKalmanFilter = new LatLngKalmanFilter(4.0); // 4.0 process noise matches optimized backend
+    }
+    
     const smoothed = window.clientKalmanFilter.process(lat, lng, acc, now);
-
+    
     if (window.lastOdoCalcTime) {
-        const dtSeconds = (now - window.lastOdoCalcTime) / 1000.0;
-        if (dtSeconds > 0) {
-            const incrementalDistanceKm = speedKmh * (dtSeconds / 3600.0);
-            if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-                window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
+        const dtSeconds = Math.max(0.1, (now - window.lastOdoCalcTime) / 1000.0);
+        let incrementalDistanceKm = 0;
+
+        // Primary Method: Doppler Speed Integration (Extremely accurate, mirrors physical odometer)
+        // Uses the GPS chip's native speed to calculate distance precisely via Speed * Time
+        if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
+            // Filter out completely stationary micro-vibrations (e.g. speed < 0.2 m/s or ~0.7 km/h)
+            if (speedMps >= 0.2) {
+                incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
+            }
+        } 
+        // Fallback Method: Kalman-Smoothed Coordinates
+        else if (window.lastSmoothedCoords) {
+            const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
+            const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
+
+            // 1. Reject teleportation jumps (> 45 m/s)
+            // 2. Ignore stationary micro-jitter (movement < 1m or speed < 0.05 m/s)
+            if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
+                incrementalDistanceKm = segmentDist;
             }
         }
+
+        // Accumulate distance (UI will be smoothly updated by the generic interpolator)
+        if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+            window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + incrementalDistanceKm;
+            localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
+        }
     }
+    
     window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
     window.lastOdoCalcTime = now;
 
+    // LOSSLESS OFFLINE CACHING: Aggressively cache every valid point (max 1 per second)
     if (activeRideObj && activeRideObj.status === 'ongoing') {
         const offlineKey = `offline_gps_${acceptedOpportunityId}`;
         const offlineLogs = JSON.parse(localStorage.getItem(offlineKey)) || [];
         const lastLog = offlineLogs.length > 0 ? offlineLogs[offlineLogs.length - 1] : null;
+        
         if (!lastLog || (now - lastLog.time >= 1000)) {
             offlineLogs.push({ latitude: lat, longitude: lng, accuracy: acc, speed: speedKmh || 0, time: now });
             localStorage.setItem(offlineKey, JSON.stringify(offlineLogs));
         }
     }
-    if (acceptedOpportunityId && (now - lastGpsSendTime >= 1500)) {
-        lastGpsSendTime = now;
+    
+    if (typeof window.lastGpsSendTime === 'undefined') window.lastGpsSendTime = 0;
+    if (acceptedOpportunityId && (now - window.lastGpsSendTime >= 1500)) {
+        window.lastGpsSendTime = now;
         sendGpsTrackingUpdate(acceptedOpportunityId, lat, lng, acc, speedKmh);
     }
+    
     if (!window.lastIdleSyncTime || (now - window.lastIdleSyncTime >= 15000)) {
         window.lastIdleSyncTime = now;
         updateBackendDriverStatus(isOnline, lat, lng);

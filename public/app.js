@@ -1475,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- MAP PICKER LOGIC (Leaflet + OSM) ---
-    window.useLiveLocation = function(event, silent = false) {
+    window.useLiveLocation = async function(event, silent = false) {
         const btn = document.getElementById('live-loc-btn');
         const pickupInput = document.getElementById('pickup');
 
@@ -1488,23 +1488,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!silent && pickupInput) {
             pickupInput.placeholder = 'Detecting your location...';
             pickupInput.value = '';
-        }
-
-        if (!navigator.geolocation) {
-            if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
-            if (!silent) window.showGpsTurnOnPopup();
-            return;
-        }
-
-        // Analyze permissions if available
-        if (navigator.permissions && navigator.permissions.query) {
-            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-                if (result.state === 'denied' && !silent) {
-                    if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
-                    if (pickupInput) pickupInput.placeholder = 'Enter pickup address';
-                    window.showGpsTurnOnPopup();
-                }
-            }).catch(() => {});
         }
 
         const getPositionSuccess = async (position) => {
@@ -1546,22 +1529,45 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const getPositionError = (err) => {
-            // Try fallback with low accuracy if high accuracy timed out or failed
-            navigator.geolocation.getCurrentPosition(
-                getPositionSuccess,
-                (fallbackErr) => {
-                    if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
-                    if (pickupInput) pickupInput.placeholder = 'Enter pickup address';
-                    console.warn('GPS location error:', fallbackErr);
-                    if (!silent) {
-                        window.showGpsTurnOnPopup();
-                    }
-                },
-                { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
-            );
+            console.warn('GPS location error:', err);
+            if (btn) { btn.style.animation = ''; btn.style.pointerEvents = ''; }
+            if (pickupInput) pickupInput.placeholder = 'Enter pickup address';
+            if (!silent) window.showGpsTurnOnPopup();
         };
 
-        navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError, { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 });
+        try {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+                // Use Capacitor Native Geolocation (Solves WebView permission timeouts)
+                const permStatus = await window.Capacitor.Plugins.Geolocation.checkPermissions();
+                if (permStatus.location !== 'granted') {
+                    await window.Capacitor.Plugins.Geolocation.requestPermissions();
+                }
+                const position = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 10000
+                });
+                getPositionSuccess(position);
+            } else if (navigator.geolocation) {
+                // Fallback to HTML5 Geolocation
+                navigator.geolocation.getCurrentPosition(
+                    getPositionSuccess,
+                    (err) => {
+                        // Fallback to low accuracy if high accuracy fails
+                        navigator.geolocation.getCurrentPosition(
+                            getPositionSuccess,
+                            getPositionError,
+                            { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
+                        );
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+                );
+            } else {
+                throw new Error("Geolocation not supported");
+            }
+        } catch (err) {
+            getPositionError(err);
+        }
     };
 
     // Auto-detect pickup location silently on page load
@@ -2080,34 +2086,34 @@ window.updateMapMarkers = async function() {
 window.showFareBreakdown = function() {
     if (!selectedVehicleData || !selectedVehicleData.breakdown) return;
     const b = selectedVehicleData.breakdown;
-    let html = 
+    let html = `
         <div style="text-align:left; font-size:0.95rem; line-height:1.6; color:var(--text-main);">
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;">
-                <span>Distance Fare:</span> <strong>?</strong>
+                <span>Distance Fare:</span> <strong>₹${b.distanceFare || 0}</strong>
             </div>
-    ;
+    `;
     if (b.driverAllowance > 0) {
-        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Driver Allowance:</span> <strong>?</strong></div>;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Driver Allowance:</span> <strong>₹${b.driverAllowance}</strong></div>`;
     }
     if (b.peakCharge > 0) {
-        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Peak Hour Surcharge:</span> <strong>?</strong></div>;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Peak Hour Surcharge:</span> <strong>₹${b.peakCharge}</strong></div>`;
     }
     if (b.specialLocationCharge > 0) {
-        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span> Surcharge:</span> <strong>?</strong></div>;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Surcharge:</span> <strong>₹${b.specialLocationCharge}</strong></div>`;
     }
     if (b.extraDropsCharge > 0) {
-        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Extra Stops ():</span> <strong>?</strong></div>;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Extra Stops:</span> <strong>₹${b.extraDropsCharge}</strong></div>`;
     }
     
-    html += 
+    html += `
             <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.1rem; color:var(--primary-red); margin-top:12px;">
-                <span>Total Estimated Fare:</span> <span>?</span>
+                <span>Total Estimated Fare:</span> <span>₹${selectedVehicleData.price || 0}</span>
             </div>
             <div style="font-size:0.8rem; color:var(--text-muted); margin-top:12px; text-align:center;">
                 * This is an estimate based on optimal routes. Actual fare may vary due to traffic or detours.
             </div>
         </div>
-    ;
+    `;
     
     Swal.fire({
         title: 'Fare Breakdown',

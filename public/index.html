@@ -709,9 +709,13 @@
             sugg.innerHTML = '<div style="padding:14px 16px; font-size:0.9rem; color:#888;">Searching...</div>';
             sugg.style.display = 'block';
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             try {
                 const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '';
-                const res = await fetch(`${baseUrl}/api/proxy/geocode?q=${encodeURIComponent(query)}&limit=6`);
+                const res = await fetch(`${baseUrl}/api/proxy/geocode?q=${encodeURIComponent(query)}&limit=6`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
 
                 sugg.innerHTML = '';
@@ -736,7 +740,11 @@
                     sugg.innerHTML = '<div style="padding:14px 16px; font-size:0.9rem; color:#888;">No results found. Try a different name.</div>';
                 }
             } catch (err) {
-                sugg.innerHTML = '<div style="padding:14px 16px; font-size:0.9rem; color:#c00;">Search failed. Check connection.</div>';
+                if (err.name === 'AbortError') {
+                    sugg.innerHTML = '<div style="padding:14px 16px; font-size:0.9rem; color:#c00;">Search timed out. Check connection.</div>';
+                } else {
+                    sugg.innerHTML = '<div style="padding:14px 16px; font-size:0.9rem; color:#c00;">Search failed. Check connection.</div>';
+                }
                 console.error('Map search error:', err);
             }
         }
