@@ -1584,7 +1584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!map) {
             map = L.map('map-picker').setView([13.0827, 80.2707], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 

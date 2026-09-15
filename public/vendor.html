@@ -1963,7 +1963,7 @@
             if (liveMap) return;
             // Center map at Chennai or current context coords
             liveMap = L.map('live-route-map').setView([13.0827, 80.2707], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(liveMap);
             

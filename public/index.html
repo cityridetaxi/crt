@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="customer.css?v=3">
     
     <!-- CSP & JS Config -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://*.basemaps.cartocdn.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://cityridetaxi.org wss://cityridetaxi.org https://*.railway.app https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org https://unpkg.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://unpkg.com https://ui-avatars.com https://*.google.com https://img.icons8.com; script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* capacitor://* https://cityridetaxi.org wss://cityridetaxi.org https://*.railway.app https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org https://unpkg.com;">
     <script src="config.js"></script>
     
     <!-- Leaflet Map -->
@@ -575,7 +575,7 @@
             setTimeout(() => {
                 try {
                     window.lmap = L.map('landing-map', {zoomControl: false, attributionControl: false}).setView([13.0827, 80.2707], 13);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(window.lmap);
                 } catch(e){}

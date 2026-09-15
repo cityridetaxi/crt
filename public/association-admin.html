@@ -1394,7 +1394,7 @@ function switchTab(tabId, el) {
         
         if (!assocRadarMap && typeof L !== 'undefined') {
             assocRadarMap = L.map('assoc-radar-map').setView([11.6643, 78.1460], 11);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 attribution: '© CityRide District GPS'
             }).addTo(assocRadarMap);
         }

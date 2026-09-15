@@ -5283,7 +5283,7 @@ async function updateSurgeRule(surgeKey, inputId) {
 
                 if (!fleetRadarMap) {
                     fleetRadarMap = L.map('fleet-radar-map').setView([11.6643, 78.1460], 10);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                         maxZoom: 19,
                         attribution: '© OpenStreetMap'
                     }).addTo(fleetRadarMap);
