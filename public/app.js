@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="cm-duration" style="text-align:right; font-size:0.85rem; font-weight:600; color:var(--cr-text-main);">${window.selectedDuration || '—'}</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
-                    <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💰</span> Estimated Fare</div>
+                    <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💰</span> Estimated Fare <span style="cursor:pointer; font-size:1.1rem; color:var(--info-blue);" onclick="showFareBreakdown()" title="View Fare Breakdown">👁️</span></div>
                     <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">₹${selectedVehicleData.fare}</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
@@ -955,6 +955,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const r2 = (config && config.slab2_rate !== undefined) ? config.slab2_rate : 28;
         const r1 = (config && config.slab1_rate !== undefined) ? config.slab1_rate : 30;
 
+        const rAbove100 = (config && config.above100_rate !== undefined) ? config.above100_rate : (config.perKm || r11);
+
+        if (d > 100) { fare += (d - 100) * rAbove100; d = 100; }
         if (d > 90) { fare += (d - 90) * r11; d = 90; }
         if (d > 80) { fare += (d - 80) * r10; d = 80; }
         if (d > 70) { fare += (d - 70) * r9; d = 70; }
@@ -1146,13 +1149,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                     if (distance < minKm) detailLabel += ` [${minKm}KM Min Applied]`;
                 } else if (tType.id === 'oneway') {
-                    const config = info.oneway;
+                    const config = info.oneway || info.local; // Fallback to local slabs
                     const minKm = config.minKm || 130;
                     const billableDist = Math.max(distance, minKm);
-                    const distanceFare = billableDist * config.perKm;
+                    const distanceFare = calculateLocalSlabFare(billableDist, config);
                     const baseFareLimit = config.base || 0;
                     const baseKmFare = Math.max(baseFareLimit, distanceFare);
-                    const driverAllowance = 400;
+                    const driverAllowance = distance > 250 ? 600 : 400;
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
 
                     const extraDropsCharge = extraDropsCount * 50;
@@ -1167,14 +1170,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                     if (distance < minKm) detailLabel += ` [${minKm}KM Min Applied]`;
                 } else if (tType.id === 'round') {
-                    const config = info.round;
+                    const config = info.round || info.local;
                     const minKmForTrip = config.minKmPerDay || 250;
                     const actualTwoWayDist = distance * 2;
                     const billableDist = Math.max(actualTwoWayDist, minKmForTrip * tripDays);
-                    const distanceFare = billableDist * config.perKm;
+                    const distanceFare = calculateLocalSlabFare(billableDist, config);
                     const baseFareLimit = config.base || 0;
                     const baseKmFare = Math.max(baseFareLimit, distanceFare);
-                    const driverAllowance = 400;
+                    const driverAllowance = actualTwoWayDist > 250 ? 600 : 400;
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
                     const baseTotal = baseKmFare + (vType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge;
                     customerFee = getPlatformFee(baseTotal);
@@ -2073,4 +2076,43 @@ window.updateMapMarkers = async function() {
         console.warn('Route fetch for map failed:', e);
         window.drawRouteOnMap(null, pickupCoords, extraCoordsArray, dropCoords);
     }
+};
+window.showFareBreakdown = function() {
+    if (!selectedVehicleData || !selectedVehicleData.breakdown) return;
+    const b = selectedVehicleData.breakdown;
+    let html = 
+        <div style="text-align:left; font-size:0.95rem; line-height:1.6; color:var(--text-main);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;">
+                <span>Distance Fare:</span> <strong>?</strong>
+            </div>
+    ;
+    if (b.driverAllowance > 0) {
+        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Driver Allowance:</span> <strong>?</strong></div>;
+    }
+    if (b.peakCharge > 0) {
+        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Peak Hour Surcharge:</span> <strong>?</strong></div>;
+    }
+    if (b.specialLocationCharge > 0) {
+        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span> Surcharge:</span> <strong>?</strong></div>;
+    }
+    if (b.extraDropsCharge > 0) {
+        html += <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;"><span>Extra Stops ():</span> <strong>?</strong></div>;
+    }
+    
+    html += 
+            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.1rem; color:var(--primary-red); margin-top:12px;">
+                <span>Total Estimated Fare:</span> <span>?</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:12px; text-align:center;">
+                * This is an estimate based on optimal routes. Actual fare may vary due to traffic or detours.
+            </div>
+        </div>
+    ;
+    
+    Swal.fire({
+        title: 'Fare Breakdown',
+        html: html,
+        confirmButtonColor: '#ff2d55',
+        confirmButtonText: 'Close'
+    });
 };

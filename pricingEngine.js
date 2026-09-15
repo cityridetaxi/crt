@@ -1,5 +1,18 @@
 // pricingEngine.js - Canonical Pricing & Commission Engine
 
+// Validates and coerces numerical values, clamping to min if necessary
+function safeNum(val, defaultVal = 0, minVal = null) {
+    let parsed = parseFloat(val);
+    if (isNaN(parsed) || !isFinite(parsed)) parsed = defaultVal;
+    if (minVal !== null && parsed < minVal) parsed = minVal;
+    return parsed;
+}
+
+// 20. Money Rounding
+function roundMoney(amount) {
+    return Math.ceil(safeNum(amount));
+}
+
 // Calculates the canonical fare for a ride
 async function calculateCanonicalFare(db, {
     distanceKm, 
@@ -15,145 +28,168 @@ async function calculateCanonicalFare(db, {
     pickupDate, 
     preRideWaitingCharge = 0 
 }) {
-    // Fetch active commission config for dynamic customer platform fee
+    // 5. INPUT VALIDATION
+    const dist = safeNum(distanceKm, 0, 0);
+    const dur = safeNum(durationMins, 0, 0);
+    const vType = typeof vehicleType === 'string' ? vehicleType : 'sedan';
+    const cat = typeof category === 'string' ? category : 'local';
+
     let activeCommissionConfig = null;
     if (db) {
         try {
             const [commRows] = await db.query("SELECT * FROM taxi_commission_configs WHERE status = 'active' ORDER BY version DESC LIMIT 1");
             if (commRows.length > 0) activeCommissionConfig = commRows[0];
         } catch (err) {
-            console.error("Error fetching active commission config in pricingEngine:", err);
+            console.error("[PricingEngine] Error fetching commission config:", err.message);
         }
     }
 
-    const getPlatformFee = (baseAmt) => {
+    // 17. CUSTOMER PLATFORM FEE
+    const getPlatformFee = (subtotalAmt) => {
         if (!activeCommissionConfig) return 0;
         if (activeCommissionConfig.customer_commission_type === 'fixed') {
-            return parseFloat(activeCommissionConfig.customer_commission_fixed) || 0;
+            return safeNum(activeCommissionConfig.customer_commission_fixed, 0, 0);
         }
-        return (baseAmt * (parseFloat(activeCommissionConfig.customer_commission_percent) || 0)) / 100;
+        const pct = safeNum(activeCommissionConfig.customer_commission_percent, 0, 0);
+        return (subtotalAmt * pct) / 100;
     };
 
-    // 1. Fetch Pricing Config (check vendor first, then fallback)
+    // 1. Fetch Pricing Config
     let pricingConfig = null;
-    if (vendorId) {
-        const [vendorTariffRows] = await db.query(
-            'SELECT config FROM taxi_vendor_tariffs WHERE vendor_id = ? AND vehicle_type = ? AND category = ?', 
-            [vendorId, vehicleType, category]
-        );
-        if (vendorTariffRows.length > 0) {
-            pricingConfig = typeof vendorTariffRows[0].config === 'string' ? JSON.parse(vendorTariffRows[0].config) : vendorTariffRows[0].config;
-        }
-    }
-    
-    if (!pricingConfig) {
-        const [tariffRows] = await db.query(
-            'SELECT config FROM taxi_tariffs WHERE vehicle_type = ? AND category = ?', 
-            [vehicleType, category]
-        );
-        if (tariffRows.length > 0) {
-            pricingConfig = typeof tariffRows[0].config === 'string' ? JSON.parse(tariffRows[0].config) : tariffRows[0].config;
+    if (db) {
+        try {
+            if (vendorId) {
+                const [vendorTariffRows] = await db.query(
+                    'SELECT config FROM taxi_vendor_tariffs WHERE vendor_id = ? AND vehicle_type = ? AND category = ?', 
+                    [vendorId, vType, cat]
+                );
+                if (vendorTariffRows.length > 0) {
+                    pricingConfig = typeof vendorTariffRows[0].config === 'string' ? JSON.parse(vendorTariffRows[0].config) : vendorTariffRows[0].config;
+                }
+            }
+            if (!pricingConfig) {
+                const [tariffRows] = await db.query(
+                    'SELECT config FROM taxi_tariffs WHERE vehicle_type = ? AND category = ?', 
+                    [vType, cat]
+                );
+                if (tariffRows.length > 0) {
+                    pricingConfig = typeof tariffRows[0].config === 'string' ? JSON.parse(tariffRows[0].config) : tariffRows[0].config;
+                }
+            }
+        } catch (e) {
+            console.error("[PricingEngine] Error fetching pricing config:", e.message);
         }
     }
 
     // 2. Fetch Active Peak Rules
-    const [peakRules] = await db.query('SELECT * FROM taxi_peak_rules WHERE is_active = 1');
-    const peakMult = category === 'local' ? getPeakMultiplier(pickupTime || new Date(), peakRules) : 0;
+    let peakMult = 0;
+    if (db && cat === 'local') {
+        try {
+            const [peakRules] = await db.query('SELECT * FROM taxi_peak_rules WHERE is_active = 1');
+            peakMult = getPeakMultiplier(pickupTime || new Date(), peakRules);
+        } catch (e) {
+            console.error("[PricingEngine] Error fetching peak rules:", e.message);
+        }
+    }
 
     // 3. Fetch Special Location Charge
     let specialSurchargePct = 0;
-    if (specialPlaceType) {
-        const [spFinishRows] = await db.query(
-            'SELECT surcharge_percentage FROM taxi_special_location_charges WHERE place_type = ? AND is_active = 1', 
-            [specialPlaceType]
-        );
-        if (spFinishRows.length > 0) {
-            specialSurchargePct = parseFloat(spFinishRows[0].surcharge_percentage) / 100;
+    if (db && specialPlaceType) {
+        try {
+            const [spFinishRows] = await db.query(
+                'SELECT surcharge_percentage FROM taxi_special_location_charges WHERE place_type = ? AND is_active = 1', 
+                [specialPlaceType]
+            );
+            if (spFinishRows.length > 0) {
+                specialSurchargePct = safeNum(spFinishRows[0].surcharge_percentage, 0, 0) / 100;
+            }
+        } catch (e) {
+            console.error("[PricingEngine] Error fetching special surcharge:", e.message);
         }
     }
 
     // 4. Calculate Extra Drops
     let extraDropsCharge = 0;
+    let extraDropsCount = 0;
     try {
-        if (extraDrops) {
+        if (extraDrops && (cat === 'local' || cat === 'oneway')) {
             const stops = typeof extraDrops === 'string' ? JSON.parse(extraDrops) : extraDrops;
             if (Array.isArray(stops)) {
-                if (category === 'local' || category === 'oneway') {
-                    extraDropsCharge = stops.length * 50;
-                }
+                extraDropsCount = stops.length;
+                extraDropsCharge = extraDropsCount * 50;
             }
         }
     } catch (e) {
-        console.error("Failed to parse extra_drops in canonical engine", e);
+        console.error("[PricingEngine] Failed to parse extra_drops:", e.message);
     }
 
-    // 5. Calculate base fare & waiting charge
-    let totalFare = 0;
-    let waitingCharge = 0;
     let baseKmFare = 0;
-    
-    // Rental is preserved as-is but not extended
-    if (category === 'rental') {
+    let waitingCharge = safeNum(preRideWaitingCharge, 0, 0);
+    let driverAllowance = 0;
+    let tripDays = 1;
+    let subtotal = 0;
+
+    // RENTAL
+    if (cat === 'rental') {
         const packageVal = rentalPackage || '2-20';
         const [pMaxHrs, pMaxKm] = packageVal.split('-').map(Number);
         
-        const rentalAllowedMins = (pMaxHrs || 2) * 60;
-        if (durationMins > rentalAllowedMins) {
-            waitingCharge = (durationMins - rentalAllowedMins) * 2;
+        const rentalAllowedMins = safeNum(pMaxHrs, 2) * 60;
+        if (dur > rentalAllowedMins) {
+            waitingCharge += Math.ceil((dur - rentalAllowedMins)) * 2;
         }
 
         if (pricingConfig && pricingConfig[packageVal]) {
             const packageConfig = pricingConfig[packageVal];
-            const extraKm = Math.max(0, distanceKm - pMaxKm);
-            const extraKmCharge = extraKm * packageConfig.extraKm;
-            const durationHrs = durationMins / 60;
-            const extraHrs = Math.max(0, Math.ceil(durationHrs - pMaxHrs));
-            const extraHrCharge = extraHrs * packageConfig.extraHour;
+            const extraKm = Math.max(0, dist - safeNum(pMaxKm, 20));
+            const extraKmCharge = extraKm * safeNum(packageConfig.extraKm, 0);
+            const durationHrs = dur / 60;
+            const extraHrs = Math.max(0, Math.ceil(durationHrs - safeNum(pMaxHrs, 2)));
+            const extraHrCharge = extraHrs * safeNum(packageConfig.extraHour, 0);
 
             const totalExtra = extraKmCharge + extraHrCharge;
-            baseKmFare = packageConfig.base + totalExtra;
-            const specialCharge = baseKmFare * specialSurchargePct;
-            const baseTotal = baseKmFare + specialCharge + waitingCharge;
-            totalFare = baseTotal + getPlatformFee(baseTotal);
+            baseKmFare = safeNum(packageConfig.base, 0) + totalExtra;
         } else {
-            // Fallback for rental if no config
-            totalFare = 500;
+            baseKmFare = 500; // Fallback
         }
-    } else if (category === 'local') {
-        waitingCharge = preRideWaitingCharge;
+        const specialCharge = baseKmFare * specialSurchargePct;
+        subtotal = baseKmFare + specialCharge + waitingCharge;
+
+    // LOCAL
+    } else if (cat === 'local') {
         const config = pricingConfig || { base: 150, perKm: 20, minKm: 0 };
-        const minKm = typeof config.minKm === 'number' ? config.minKm : 0;
-        const billableDist = Math.max(distanceKm, minKm);
+        const minKm = safeNum(config.minKm, 0);
+        const billableDist = Math.max(dist, minKm);
         
         const allowedMins = billableDist * 2;
-        if (durationMins > allowedMins) {
-            waitingCharge += Math.ceil((durationMins - allowedMins) * 2);
+        if (dur > allowedMins) {
+            waitingCharge += Math.ceil(dur - allowedMins) * 2;
         }
 
         baseKmFare = calculateLocalSlabFare(billableDist, config);
         const peakCharge = baseKmFare * peakMult;
         const specialCharge = baseKmFare * specialSurchargePct;
-        const baseTotal = baseKmFare + peakCharge + specialCharge + waitingCharge + extraDropsCharge;
-        totalFare = baseTotal + getPlatformFee(baseTotal);
-    } else if (category === 'oneway') {
-        waitingCharge = preRideWaitingCharge;
+        subtotal = baseKmFare + peakCharge + specialCharge + waitingCharge + extraDropsCharge;
+
+    // ONEWAY
+    } else if (cat === 'oneway') {
         const config = pricingConfig || { base: 0, perKm: 13, minKm: 130 };
-        const baseFare = config.base || 0;
-        const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
-        const billableDist = Math.max(distanceKm, minKm);
-        const distanceFare = billableDist * (config.perKm || 13);
+        const baseFare = safeNum(config.base, 0);
+        const minKm = safeNum(config.minKm, 130);
+        const billableDist = Math.max(dist, minKm);
+        
+        const distanceFare = billableDist * safeNum(config.perKm, 13);
         baseKmFare = Math.max(baseFare, distanceFare);
         
-        const driverAllowance = 400;
+        driverAllowance = vType === 'bike' ? 0 : (dist > 250 ? 600 : 400);
         const specialCharge = baseKmFare * specialSurchargePct;
-        const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance) + specialCharge + waitingCharge + extraDropsCharge;
-        totalFare = baseTotal + getPlatformFee(baseTotal);
-    } else if (category === 'round') {
-        waitingCharge = preRideWaitingCharge;
+        subtotal = baseKmFare + driverAllowance + specialCharge + waitingCharge + extraDropsCharge;
+
+    // ROUND
+    } else if (cat === 'round') {
         const config = pricingConfig || { base: 0, perKm: 12, minKmPerDay: 250 };
-        const baseFare = config.base || 0;
+        const baseFare = safeNum(config.base, 0);
         
-        let tripDays = 1;
         if (returnDate && pickupDate) {
             const start = new Date(pickupDate);
             const end = new Date(returnDate);
@@ -163,20 +199,19 @@ async function calculateCanonicalFare(db, {
             }
         }
         
-        const minKmForTrip = (typeof config.minKmPerDay === 'number' ? config.minKmPerDay : 250) * tripDays;
-        const billableDist = Math.max(distanceKm, minKmForTrip);
-        const distanceFare = billableDist * (config.perKm || 12);
+        const minKmForTrip = safeNum(config.minKmPerDay, 250) * tripDays;
+        const billableDist = Math.max(dist, minKmForTrip);
+        
+        const distanceFare = billableDist * safeNum(config.perKm, 12);
         baseKmFare = Math.max(baseFare, distanceFare);
         
-        const driverAllowance = 400;
+        driverAllowance = vType === 'bike' ? 0 : (tripDays * 400); // Wait, if dist > 250 logic applies? Prompt says "400 * tripDays".
         const specialCharge = baseKmFare * specialSurchargePct;
-        const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge + waitingCharge;
-        totalFare = baseTotal + getPlatformFee(baseTotal);
+        subtotal = baseKmFare + driverAllowance + specialCharge + waitingCharge;
     }
 
-    const platformFee = Math.ceil(totalFare - (totalFare / (1 + (activeCommissionConfig && activeCommissionConfig.customer_commission_type === 'percent' ? parseFloat(activeCommissionConfig.customer_commission_percent)/100 : 0))));
-    // Actually, getPlatformFee(baseTotal) was already added to totalFare.
-    const calculatedPlatformFee = totalFare - (totalFare - getPlatformFee(totalFare - getPlatformFee(0))); // Simplified below
+    const platformFee = getPlatformFee(subtotal);
+    const finalFare = roundMoney(subtotal + platformFee);
 
     return {
         baseKmFare,
@@ -184,32 +219,40 @@ async function calculateCanonicalFare(db, {
         extraDropsCharge,
         peakCharge: baseKmFare * peakMult,
         specialCharge: baseKmFare * specialSurchargePct,
-        finalFare: Math.ceil(totalFare),
-        platformFee: getPlatformFee(Math.ceil(totalFare - getPlatformFee(0))), // approximated base
-        driverAllowance: (category === 'oneway' || category === 'round') ? (vehicleType === 'bike' ? 0 : 400) : 0,
+        driverAllowance,
+        platformFee,
+        subtotal,
+        finalFare,
+        tripDays,
         pricingConfig
     };
 }
 
+// 9. LOCAL FARE — SLAB SYSTEM
 function calculateLocalSlabFare(distance, config) {
-    const minKm = (config && config.minKm) ? parseFloat(config.minKm) : 0;
-    const baseFare = (config && config.base !== undefined) ? parseFloat(config.base) : 0;
+    const minKm = safeNum(config?.minKm, 0);
+    const baseFare = safeNum(config?.base, 0);
     const d = Math.max(distance, minKm);
+
+    // If config explicitly does not have slab1_rate but has perKm, use fallback
+    if (config && config.perKm !== undefined && config.slab1_rate === undefined) {
+        return Math.max(baseFare, d * safeNum(config.perKm, 20));
+    }
 
     let distanceFare = 0;
 
-    const r1 = (config && config.slab1_rate !== undefined) ? parseFloat(config.slab1_rate) : (config.perKm || 20); 
-    const r2 = (config && config.slab2_rate !== undefined) ? parseFloat(config.slab2_rate) : r1; 
-    const r3 = (config && config.slab3_rate !== undefined) ? parseFloat(config.slab3_rate) : r2; 
-    const r4 = (config && config.slab4_rate !== undefined) ? parseFloat(config.slab4_rate) : r3; 
-    const r5 = (config && config.slab5_rate !== undefined) ? parseFloat(config.slab5_rate) : r4; 
-    const r6 = (config && config.slab6_rate !== undefined) ? parseFloat(config.slab6_rate) : r5; 
-    const r7 = (config && config.slab7_rate !== undefined) ? parseFloat(config.slab7_rate) : r6; 
-    const r8 = (config && config.slab8_rate !== undefined) ? parseFloat(config.slab8_rate) : r7; 
-    const r9 = (config && config.slab9_rate !== undefined) ? parseFloat(config.slab9_rate) : r8; 
-    const r10 = (config && config.slab10_rate !== undefined) ? parseFloat(config.slab10_rate) : r9;
-    const r11 = (config && config.slab11_rate !== undefined) ? parseFloat(config.slab11_rate) : r10;
-    const rAbove100 = (config && config.above100_rate !== undefined) ? parseFloat(config.above100_rate) : (config.perKm || r11);
+    const r1 = safeNum(config?.slab1_rate, safeNum(config?.perKm, 20)); 
+    const r2 = safeNum(config?.slab2_rate, r1); 
+    const r3 = safeNum(config?.slab3_rate, r2); 
+    const r4 = safeNum(config?.slab4_rate, r3); 
+    const r5 = safeNum(config?.slab5_rate, r4); 
+    const r6 = safeNum(config?.slab6_rate, r5); 
+    const r7 = safeNum(config?.slab7_rate, r6); 
+    const r8 = safeNum(config?.slab8_rate, r7); 
+    const r9 = safeNum(config?.slab9_rate, r8); 
+    const r10 = safeNum(config?.slab10_rate, r9);
+    const r11 = safeNum(config?.slab11_rate, r10);
+    const rAbove100 = safeNum(config?.above100_rate, safeNum(config?.perKm, r11));
 
     let rem = d;
     if (rem > 100) { distanceFare += (rem - 100) * rAbove100; rem = 100; }
@@ -228,6 +271,7 @@ function calculateLocalSlabFare(distance, config) {
     return Math.max(baseFare, distanceFare);
 }
 
+// 11. PEAK PRICING
 function getPeakMultiplier(timeStr, rules) {
     if (!rules || rules.length === 0) return 0;
     const now = new Date(timeStr);
@@ -240,60 +284,70 @@ function getPeakMultiplier(timeStr, rules) {
         let [sH, sM] = rule.start_time.split(':').map(Number);
         let [eH, eM] = rule.end_time.split(':').map(Number);
 
-        const startMins = sH * 60 + (sM || 0);
-        const endMins = eH * 60 + (eM || 0);
+        const startMins = safeNum(sH) * 60 + safeNum(sM);
+        const endMins = safeNum(eH) * 60 + safeNum(eM);
 
         let isActive = false;
         if (startMins <= endMins) {
             if (currMins >= startMins && currMins <= endMins) isActive = true;
         } else {
+            // Overnight rule
             if (currMins >= startMins || currMins <= endMins) isActive = true;
         }
 
         if (isActive) {
-            const pct = parseFloat(rule.surcharge_percentage) || 0;
+            const pct = safeNum(rule.surcharge_percentage, 0);
             if (pct > maxSurcharge) maxSurcharge = pct;
         }
     }
     return maxSurcharge / 100;
 }
 
+// 7 & 8. AUTOMATIC LOCAL / OUTSTATION CLASSIFICATION & ADMIN MODE
 async function resolveRideCategory(db, distanceKm, requestedCategory) {
-    // Check config
-    const [settings] = await db.query("SELECT setting_key, setting_value FROM taxi_settings WHERE setting_key IN ('classification_mode', 'local_enabled', 'outstation_enabled', 'local_threshold_km')");
+    const dist = safeNum(distanceKm, 0);
+    
     let mode = 'AUTOMATIC';
     let threshold = 100;
     let localEnabled = true;
     let outstationEnabled = true;
 
-    for (const row of settings) {
-        if (row.setting_key === 'classification_mode') mode = row.setting_value.toUpperCase();
-        if (row.setting_key === 'local_threshold_km') threshold = parseFloat(row.setting_value) || 100;
-        if (row.setting_key === 'local_enabled') localEnabled = (row.setting_value === 'true');
-        if (row.setting_key === 'outstation_enabled') outstationEnabled = (row.setting_value === 'true');
-    }
-
-    let finalCategory = 'local';
-    const reqCat = (requestedCategory || '').toLowerCase();
-    
-    if (mode === 'MANUAL' && requestedCategory) {
-        finalCategory = reqCat;
-    } else {
-        if (reqCat === 'oneway' || reqCat === 'round' || reqCat === 'outstation') {
-            finalCategory = reqCat === 'outstation' ? 'oneway' : reqCat;
-        } else if (reqCat === 'rental') {
-            finalCategory = 'rental';
-        } else if (distanceKm >= threshold) {
-            finalCategory = 'outstation'; // Use outstation for distance >= threshold
-        } else {
-            finalCategory = 'local';
+    if (db) {
+        try {
+            const [settings] = await db.query("SELECT setting_key, setting_value FROM taxi_settings WHERE setting_key IN ('classification_mode', 'local_enabled', 'outstation_enabled', 'local_threshold_km')");
+            for (const row of settings) {
+                if (row.setting_key === 'classification_mode') mode = String(row.setting_value).toUpperCase();
+                if (row.setting_key === 'local_threshold_km') threshold = safeNum(row.setting_value, 100);
+                if (row.setting_key === 'local_enabled') localEnabled = (row.setting_value === 'true');
+                if (row.setting_key === 'outstation_enabled') outstationEnabled = (row.setting_value === 'true');
+            }
+        } catch (e) {
+            console.error("[PricingEngine] Error fetching classification config:", e.message);
         }
     }
 
-    // Apply specific category mappings if requested category is oneway or round
-    if (finalCategory === 'outstation') {
-        finalCategory = 'oneway'; 
-        if (reqCat === 'round') finalCategory = 'round';
+    let reqCat = String(requestedCategory || '').toLowerCase();
+    if (reqCat === 'outstation') reqCat = 'oneway';
+
+    let finalCategory = 'local';
+    
+    if (mode === 'MANUAL' && reqCat) {
+        const validCats = ['local', 'oneway', 'round', 'rental'];
+        if (validCats.includes(reqCat)) {
+            finalCategory = reqCat;
+        } else {
+            throw new Error(`Invalid manual category requested: ${requestedCategory}`);
+        }
+    } else {
+        // AUTOMATIC: calculate category from server-side road distance
+        // ignore client category except for explicit rental/round
+        if (reqCat === 'rental' || reqCat === 'round') {
+            finalCategory = reqCat;
+        } else if (dist >= threshold) {
+            finalCategory = 'oneway';
+        } else {
+            finalCategory = 'local';
+        }
     }
 
     if (!localEnabled && finalCategory === 'local') throw new Error("Local rides are disabled by admin.");
@@ -306,5 +360,6 @@ module.exports = {
     calculateCanonicalFare,
     resolveRideCategory,
     calculateLocalSlabFare,
-    getPeakMultiplier
+    getPeakMultiplier,
+    safeNum
 };

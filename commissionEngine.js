@@ -10,6 +10,7 @@ async function settleRideFinancials(db, {
     extraDropsCharge,
     peakCharge,
     specialCharge,
+    platformFee,
     finalFare,
     vendorMarkup,
     driverId,
@@ -64,12 +65,7 @@ async function settleRideFinancials(db, {
         }
 
         // 4. Calculate Absolute Amounts (Platform standard)
-        let customerCommissionAmount = 0;
-        if (config.customer_commission_type === 'fixed') {
-            customerCommissionAmount = custFix;
-        } else {
-            customerCommissionAmount = (finalFare * custPct) / 100;
-        }
+        let customerCommissionAmount = platformFee || 0;
 
         let driverCommissionAmount = 0;
         if (config.driver_commission_type === 'fixed') {
