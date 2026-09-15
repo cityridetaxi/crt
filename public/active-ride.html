@@ -629,7 +629,7 @@
                 }
                 
                 // Break the MutationObserver infinite loop if already restyled
-                if (detailsHtml.innerHTML.includes('driver-card-luxe')) return;
+                if (detailsHtml.innerHTML.includes('driver-card-luxe') || detailsHtml.innerHTML.includes('Searching for a Driver...') || detailsHtml.innerHTML.includes('Finding your LuxeRide...')) return;
                 
                 // If assigned or ongoing
                 const am = window._currentActiveMission;
