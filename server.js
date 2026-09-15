@@ -3170,7 +3170,7 @@ app.get('/api/admin/underground-reports', authenticateJWT, requireRole(['admin']
             LIMIT 300
         `, params);
 
-        // Calculate Stats dynamically across rows handling string fare formats (e.g. "\u20B9263")
+        // Calculate Stats dynamically across rows handling string fare formats (e.g. "₹263")
         let total_rides = rideRows.length;
         let gross_revenue = 0;
         let cancelled_rides = 0;
@@ -3419,7 +3419,7 @@ app.post('/api/chat', async (req, res) => {
             systemInstruction: `You are "CityRide AI", the official virtual assistant for CityRideTaxi.
 Your style: Friendly, professional, and concise (max 2 sentences).
 Core Knowledge:
-- Fares: Sedan is \u20B925/KM. SUV is \u20B935/KM.
+- Fares: Sedan is ₹25/KM. SUV is ₹35/KM.
 - Limits: No KM limit for local rides. Outstation rides are for longer distances between cities.
 Response Instructions: 
 - Only mention booking or redirecting if the user specifically asks how to book or seems ready to ride. 
@@ -3565,7 +3565,7 @@ app.post('/api/bookings/create', authenticateJWT, requireRole(['user', 'vendor',
         
         booking.fare = "₹" + fareDetails.finalFare;
 
-        const fareStr = String(booking.fare || '\u20B90');
+        const fareStr = String(booking.fare || '₹0');
         const distStr = String(booking.distance || '0 KM');
         const durationStr = String(booking.duration || booking.estimatedDuration || '0 Min');
 
@@ -3844,9 +3844,9 @@ app.post('/api/bookings/check-air-distance', async (req, res) => {
                 baseRadiusKm,
                 nearestDriverDistKm: 10,
                 recommendedBoosts: [
-                    { boostKm: 2, fee: 20, label: "+2 KM Radius (\u20B920 Incentive)" },
-                    { boostKm: 5, fee: 50, label: "+5 KM Radius (\u20B950 Incentive)" },
-                    { boostKm: 10, fee: 100, label: "+10 KM Max Radius (\u20B9100 Incentive)" }
+                    { boostKm: 2, fee: 20, label: "+2 KM Radius (₹20 Incentive)" },
+                    { boostKm: 5, fee: 50, label: "+5 KM Radius (₹50 Incentive)" },
+                    { boostKm: 10, fee: 100, label: "+10 KM Max Radius (₹100 Incentive)" }
                 ]
             });
         }
@@ -3872,9 +3872,9 @@ app.post('/api/bookings/check-air-distance', async (req, res) => {
             nearestDriverDistKm: roundedDist,
             requiredExtraKm,
             recommendedBoosts: [
-                { boostKm: Math.max(2, requiredExtraKm), fee: Math.max(20, requiredExtraKm * 10), label: `+${Math.max(2, requiredExtraKm)} KM Radius (\u20B9${Math.max(20, requiredExtraKm * 10)} Incentive)` },
-                { boostKm: Math.max(5, requiredExtraKm + 3), fee: Math.max(50, (requiredExtraKm + 3) * 10), label: `+${Math.max(5, requiredExtraKm + 3)} KM Radius (\u20B9${Math.max(50, (requiredExtraKm + 3) * 10)} Incentive)` },
-                { boostKm: 10, fee: 100, label: "+10 KM Max Radius (\u20B9100 Incentive)" }
+                { boostKm: Math.max(2, requiredExtraKm), fee: Math.max(20, requiredExtraKm * 10), label: `+${Math.max(2, requiredExtraKm)} KM Radius (₹${Math.max(20, requiredExtraKm * 10)} Incentive)` },
+                { boostKm: Math.max(5, requiredExtraKm + 3), fee: Math.max(50, (requiredExtraKm + 3) * 10), label: `+${Math.max(5, requiredExtraKm + 3)} KM Radius (₹${Math.max(50, (requiredExtraKm + 3) * 10)} Incentive)` },
+                { boostKm: 10, fee: 100, label: "+10 KM Max Radius (₹100 Incentive)" }
             ]
         });
     } catch (err) {
@@ -5789,7 +5789,7 @@ app.get('/api/admin/reports/associations', async (req, res) => {
                 COUNT(DISTINCT d.id) as total_drivers,
                 COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
                 COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
-                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '₹', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
             FROM taxi_associations a
             LEFT JOIN taxi_association_wallets w ON a.id = w.association_id
             LEFT JOIN taxi_drivers d ON a.id = d.association_id
@@ -5822,7 +5822,7 @@ app.get('/api/admin/reports/vehicles', async (req, res) => {
                 COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
                 COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
                 COUNT(DISTINCT b.id) as total_bookings,
-                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '₹', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_revenue
             FROM (
                 SELECT 'bike' as vehicle_type UNION 
                 SELECT 'auto' UNION 
@@ -5884,7 +5884,7 @@ app.get('/api/admin/reports/drivers', async (req, res) => {
                 COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.id END) as completed_rides,
                 COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.id END) as cancelled_rides,
                 COUNT(DISTINCT b.id) as total_assigned_missions,
-                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_earnings
+                COALESCE(SUM(CASE WHEN b.status = 'completed' THEN CAST(REPLACE(REPLACE(b.fare, '₹', ''), ',', '') AS DECIMAL(10,2)) ELSE 0 END), 0) as total_earnings
             FROM taxi_drivers d
             LEFT JOIN taxi_associations a ON d.association_id = a.id
             LEFT JOIN taxi_bookings b ON d.id = b.driver_id ${dateFilterOnJoin}
@@ -6401,7 +6401,7 @@ function formatDurationMins(mins) {
  * Calculate waiting charge using ACTUAL trip distance (not estimated).
  * Rule: Allowed Duration = actualTripDistKm × 2 minutes
  *       Waiting Time = max(0, actualDurationMins - allowedMins)
- *       Charge = waitingMins × \u20B92/min
+ *       Charge = waitingMins × ₹2/min
  * @param {number} actualTripDistKm - Actual odometer/GPS distance
  * @param {number} actualDurationMins - Actual ride duration in minutes
  * @returns {{ allowedMins: number, waitingMins: number, waitingCharge: number }}
@@ -6409,12 +6409,12 @@ function formatDurationMins(mins) {
 function calcWaitingCharge(actualTripDistKm, actualDurationMins) {
     const allowedMins = (parseFloat(actualTripDistKm) || 0) * 2;
     const waitingMins = Math.max(0, actualDurationMins - allowedMins);
-    const waitingCharge = waitingMins * 2; // \u20B92 per minute
+    const waitingCharge = waitingMins * 2; // ₹2 per minute
     return { allowedMins, waitingMins, waitingCharge };
 }
 
 /**
- * Parse a numeric value from a string that may include units like "\u20B9", "KM", etc.
+ * Parse a numeric value from a string that may include units like "₹", "KM", etc.
  * @param {string|number} val
  * @returns {number}
  */
@@ -6804,21 +6804,21 @@ app.get('/api/driver/dashboard-stats/:driverId', async (req, res) => {
         // Total completed rides & earnings
         const [completedStats] = await db.query(
             `SELECT COUNT(*) as total_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as total_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as total_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished')`, [driverId]
         );
 
         // Today's stats
         const [todayStats] = await db.query(
             `SELECT COUNT(*) as today_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as today_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as today_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished') AND DATE(COALESCE(journey_end_time, created_at)) = CURDATE()`, [driverId]
         );
 
         // This week's stats
         const [weekStats] = await db.query(
             `SELECT COUNT(*) as week_rides, 
-                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '\u20B9', ''), ',', '') AS DECIMAL(10,2))), 0) as week_earnings
+                    COALESCE(SUM(CAST(REPLACE(REPLACE(fare, '₹', ''), ',', '') AS DECIMAL(10,2))), 0) as week_earnings
              FROM taxi_bookings WHERE driver_id = ? AND status IN ('completed', 'finished') AND COALESCE(journey_end_time, created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`, [driverId]
         );
 
@@ -7122,7 +7122,7 @@ app.post('/api/bookings/start-journey', authenticateJWT, requireRole(['driver'])
                 const billableDist = Math.max(dynamicDistKm, minKm);
                 const distanceFare = billableDist * (config.perKm || 13);
                 const baseKmFare = Math.max(baseFare, distanceFare);
-                const driverAllowance = billableDist > 250 ? 600 : 400;
+                const driverAllowance = 400;
                 const specialCharge = baseKmFare * specialSurchargePct;
                 dynamicFare = (baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance) + specialCharge + extraDropsCharge) + 5;
             } else if (booking.trip_type === 'round') {
@@ -7141,12 +7141,12 @@ app.post('/api/bookings/start-journey', authenticateJWT, requireRole(['driver'])
                 const billableDist = Math.max(dynamicDistKm, minKmForTrip);
                 const distanceFare = billableDist * (config.perKm || 12);
                 const baseKmFare = Math.max(baseFare, distanceFare);
-                const driverAllowance = billableDist > 250 ? 600 : 400;
+                const driverAllowance = 400;
                 const specialCharge = baseKmFare * specialSurchargePct;
                 dynamicFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge)) + 5;
             }
 
-            dynamicFareStr = `\u20B9${Math.ceil(dynamicFare)}`;
+            dynamicFareStr = `₹${Math.ceil(dynamicFare)}`;
         }
 
         // === UPDATE DATABASE (Combined into a single query to eliminate multiple round trips) ===
@@ -7171,7 +7171,7 @@ app.post('/api/bookings/start-journey', authenticateJWT, requireRole(['driver'])
             dynamicDistStr,
             booking.fare,
             booking.distance || '0 KM',
-            booking.fare || '\u20B90'
+            booking.fare || '₹0'
         ];
 
         if (startOdometer) {
@@ -7250,7 +7250,7 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
                          VALUES (?, ?, ?, ?, 'credit', ?)`,
                         [vendId, bookingId, drId, profit, `Vendor profit share from Ride #B${bookingId}`]
                     ));
-                    console.log(`[FINANCE] \u20B9${profit} vendor profit transferred: Driver #${drId} → Vendor #${vendId} for Ride #B${bookingId}`);
+                    console.log(`[FINANCE] ₹${profit} vendor profit transferred: Driver #${drId} → Vendor #${vendId} for Ride #B${bookingId}`);
                 } catch (walletErr) {
                     console.error('[WALLET TRANSFER ERROR]', walletErr.message);
                 }
@@ -7291,7 +7291,7 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
                                      VALUES (?, ?, ?, ?, 'credit', ?)`,
                                     [booking.association_id, bookingId, booking.driver_id, commAmount, `Commission share from Ride #B${bookingId}`]
                                 ));
-                                console.log(`[FINANCE] \u20B9${commAmount.toFixed(2)} transferred to Association #${booking.association_id} from Driver #${booking.driver_id} (Ride #B${bookingId})`);
+                                console.log(`[FINANCE] ₹${commAmount.toFixed(2)} transferred to Association #${booking.association_id} from Driver #${booking.driver_id} (Ride #B${bookingId})`);
                             }
                         }
                     } catch (assocErr) {
@@ -7328,7 +7328,7 @@ app.post('/api/bookings/update-status', authenticateJWT, requireRole(['driver', 
                     profit: vendorProfitDeducted,
                     totalFare: booking.fare,
                     driverId: booking.driver_id,
-                    message: `\u20B9${vendorProfitDeducted.toFixed(2)} credited to your wallet for Ride #B${bookingId}`
+                    message: `₹${vendorProfitDeducted.toFixed(2)} credited to your wallet for Ride #B${bookingId}`
                 });
             }
             emitEvent('admin', 'booking_status_update', { bookingId, status: 'completed', driverId: booking.driver_id });
@@ -7671,7 +7671,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
 
         const totalDistance = actualDistKm;
 
-        // Calculate pre-ride waiting charge (5 min grace time, then \u20B92/min)
+        // Calculate pre-ride waiting charge (5 min grace time, then ₹2/min)
         let preRideWaitingCharge = 0;
         if (booking.reached_pickup_time && booking.journey_start_time) {
             const reachedTime = new Date(booking.reached_pickup_time);
@@ -7752,7 +7752,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
             const billableDist = Math.max(totalDistance, minKm);
             const distanceFare = billableDist * (config.perKm || 13);
             const baseKmFare = Math.max(baseFare, distanceFare);
-            const driverAllowance = billableDist > 250 ? 600 : 400;
+            const driverAllowance = 400;
             totalFare = (baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance) + waitingCharge + extraDropsCharge) + 5;
         } else if (booking.trip_type === 'round') {
             const config = pricingConfig || { base: 0, perKm: 12, minKmPerDay: 250 };
@@ -7770,7 +7770,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
             const billableDist = Math.max(totalDistance, minKmForTrip);
             const distanceFare = billableDist * (config.perKm || 12);
             const baseKmFare = Math.max(baseFare, distanceFare);
-            const driverAllowance = billableDist > 250 ? 600 : 400;
+            const driverAllowance = 400;
             totalFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays)) + waitingCharge) + 5;
         } else if (booking.trip_type === 'rental') {
             const packageVal = booking.rental_package || '2-20';
@@ -7806,7 +7806,7 @@ app.post('/api/bookings/update-gps-location', authenticateJWT, requireRole(['dri
             }
         }
 
-        const finalFare = `\u20B9${Math.ceil(totalFare)}`;
+        const finalFare = `₹${Math.ceil(totalFare)}`;
         const distanceStr = `${totalDistance.toFixed(3)} KM`;
 
         await db.query(

@@ -15,7 +15,7 @@
                     const oS = over % 60;
                     const hStr = oH > 0 ? `${oH}:` : '';
                     const charge = Math.ceil(over / 60) * 2;
-                    return `<span id="passenger-waiting-timer" data-elapsed="${elapsedSecs}" style="color:var(--danger-red, #B71C1C); font-weight:700;">Waiting: ${hStr}${String(oM).padStart(2,'0')}:${String(oS).padStart(2,'0')} (+\u20B9${charge})</span>`;
+                    return `<span id="passenger-waiting-timer" data-elapsed="${elapsedSecs}" style="color:var(--danger-red, #B71C1C); font-weight:700;">Waiting: ${hStr}${String(oM).padStart(2,'0')}:${String(oS).padStart(2,'0')} (+₹${charge})</span>`;
                 }
             }
 

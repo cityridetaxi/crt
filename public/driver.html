@@ -1731,34 +1731,47 @@ async function startGpsTracking() {
 
         // --- Google Maps-style Speed Calculation ---
         // Priority 1: Hardware GPS speed (native chipset Doppler reading)
-        // Priority 2: Haversine distance/time fallback
+        // Priority 2: Haversine distance/time fallback, heavily filtered
         let rawSpeedKmh = 0;
         let nativeSpeedAvailable = false;
+
+        // Trust native speed over 0 m/s (Doppler is highly accurate)
         if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
             rawSpeedKmh = pos.coords.speed * 3.6;
             nativeSpeedAvailable = true;
         }
-        let haversineSpeedKmh = 0;
+
         const prevCoords = window.lastGpsCoords;
-        if (prevCoords) {
-            const timeDiffSec = Math.max(0.5, (Date.now() - prevCoords.time) / 1000);
-            if (timeDiffSec > 0.5) {
-                const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
-                haversineSpeedKmh = distKm / (timeDiffSec / 3600);
+        if (!nativeSpeedAvailable) {
+            if (prevCoords) {
+                const timeDiffSec = (Date.now() - prevCoords.time) / 1000;
+                // Only use Haversine if >= 1s has passed to avoid GPS jitter magnification
+                if (timeDiffSec >= 1.0) {
+                    const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
+                    // Ignore massive jitter when accuracy is bad
+                    if (acc < 50) {
+                        rawSpeedKmh = distKm / (timeDiffSec / 3600);
+                    } else {
+                        rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
+                    }
+                } else {
+                    rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
+                }
             }
         }
-        // Sanity check: blend if native is implausible vs haversine and accuracy is poor
-        if (nativeSpeedAvailable && haversineSpeedKmh > 0 && acc > 50) {
-            const ratio = rawSpeedKmh / haversineSpeedKmh;
-            if (ratio > 3.0 || ratio < 0.2) rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
+
+        // Cap anomalous speeds (e.g., GPS glitch showing 300km/h)
+        if (rawSpeedKmh > 160) {
+            rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
         }
-        if (!nativeSpeedAvailable) {
-            rawSpeedKmh = haversineSpeedKmh;
-            if (rawSpeedKmh > 160) rawSpeedKmh = 0;
-        }
-        // EMA smoothing (alpha=0.35) for stable speedometer display
+
+        // EMA smoothing for stable speedometer UI (Google Maps uses heavy smoothing)
         if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
-        window.lastSmoothedSpeedKmh = 0.35 * rawSpeedKmh + 0.65 * window.lastSmoothedSpeedKmh;
+        window.lastSmoothedSpeedKmh = 0.2 * rawSpeedKmh + 0.8 * window.lastSmoothedSpeedKmh;
+        
+        // Snap to zero if very slow to prevent drift
+        if (window.lastSmoothedSpeedKmh < 3) window.lastSmoothedSpeedKmh = 0;
+
         const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
 
         window.lastGpsCoords = { lat, lng, time: Date.now() };
@@ -1771,20 +1784,14 @@ async function startGpsTracking() {
 
         // --- Odometer Distance Accumulation ---
         if (window.lastOdoCalcTime) {
-            const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
-            let incrementalDistanceKm = 0;
-            if (nativeSpeedAvailable && pos.coords.speed >= 0.2) {
-                // Native GPS speed × time = distance (most accurate, Google Maps style)
-                incrementalDistanceKm = (pos.coords.speed * dtSeconds) / 1000.0;
-            } else if (window.lastSmoothedCoords) {
-                const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
-                const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
-                if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
-                    incrementalDistanceKm = segmentDist;
+            const dtSeconds = (Date.now() - window.lastOdoCalcTime) / 1000.0;
+            if (dtSeconds > 0) {
+                // Use the smoothed, highly accurate UI speed (km/h) to accumulate distance
+                // speedKmh * (hours) = distance in km. This guarantees odometer perfectly matches speedometer.
+                const incrementalDistanceKm = speedKmh * (dtSeconds / 3600.0);
+                if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+                    window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
                 }
-            }
-            if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-                window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
             }
         }
         window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
@@ -1915,31 +1922,39 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     const now = timeStamp || Date.now();
     const prevCoords = window.lastGpsCoords;
 
-    // Google Maps-style speed: native hardware speed first, haversine fallback
+    // Google Maps-style speed: native hardware speed first, haversine fallback heavily filtered
     let rawSpeedKmh = 0;
     let nativeSpeedAvailable = false;
+
     if (speedMps !== null && !isNaN(speedMps) && speedMps >= 0) {
         rawSpeedKmh = speedMps * 3.6;
         nativeSpeedAvailable = true;
     }
-    let haversineSpeedKmh = 0;
-    if (prevCoords) {
-        const timeDiffSec = Math.max(0.5, (now - prevCoords.time) / 1000);
-        if (timeDiffSec > 0.5) {
-            const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
-            haversineSpeedKmh = distKm / (timeDiffSec / 3600);
+
+    if (!nativeSpeedAvailable) {
+        if (prevCoords) {
+            const timeDiffSec = (now - prevCoords.time) / 1000;
+            if (timeDiffSec >= 1.0) {
+                const distKm = getDistance(prevCoords.lat, prevCoords.lng, lat, lng);
+                if (acc < 50) {
+                    rawSpeedKmh = distKm / (timeDiffSec / 3600);
+                } else {
+                    rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
+                }
+            } else {
+                rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
+            }
         }
     }
-    if (nativeSpeedAvailable && haversineSpeedKmh > 0 && acc > 50) {
-        const ratio = rawSpeedKmh / haversineSpeedKmh;
-        if (ratio > 3.0 || ratio < 0.2) rawSpeedKmh = (rawSpeedKmh + haversineSpeedKmh) / 2;
+
+    if (rawSpeedKmh > 160) {
+        rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
     }
-    if (!nativeSpeedAvailable) {
-        rawSpeedKmh = haversineSpeedKmh;
-        if (rawSpeedKmh > 160) rawSpeedKmh = 0;
-    }
+
     if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
-    window.lastSmoothedSpeedKmh = 0.35 * rawSpeedKmh + 0.65 * window.lastSmoothedSpeedKmh;
+    window.lastSmoothedSpeedKmh = 0.2 * rawSpeedKmh + 0.8 * window.lastSmoothedSpeedKmh;
+    if (window.lastSmoothedSpeedKmh < 3) window.lastSmoothedSpeedKmh = 0;
+
     const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
 
     window.lastGpsCoords = { lat, lng, time: now };
@@ -1950,19 +1965,12 @@ function processDriverLocationUpdate(lat, lng, acc, speedMps, timeStamp) {
     const smoothed = window.clientKalmanFilter.process(lat, lng, acc, now);
 
     if (window.lastOdoCalcTime) {
-        const dtSeconds = Math.max(0.1, (now - window.lastOdoCalcTime) / 1000.0);
-        let incrementalDistanceKm = 0;
-        if (nativeSpeedAvailable && speedMps >= 0.2) {
-            incrementalDistanceKm = (speedMps * dtSeconds) / 1000.0;
-        } else if (window.lastSmoothedCoords) {
-            const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
-            const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
-            if (acc <= 200 && calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) {
-                incrementalDistanceKm = segmentDist;
+        const dtSeconds = (now - window.lastOdoCalcTime) / 1000.0;
+        if (dtSeconds > 0) {
+            const incrementalDistanceKm = speedKmh * (dtSeconds / 3600.0);
+            if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
+                window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
             }
-        }
-        if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-            window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
         }
     }
     window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
@@ -3832,7 +3840,7 @@ const minKm = typeof config.minKm === 'number' ? config.minKm : 130;
 const billableDist = Math.max(distanceKm, minKm);
 const distanceFare = billableDist * (config.perKm || 13);
 const baseKmFare = Math.max(baseFare, distanceFare);
-const driverAllowance = billableDist > 250 ? 600 : 400;
+const driverAllowance = 400;
 totalFare = (baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance) + waitingCharge) + 5;
 } else if (booking.trip_type === 'round') {
 const baseFare = config.base || 0;
@@ -3849,7 +3857,7 @@ const minKmForTrip = (typeof config.minKmPerDay === 'number' ? config.minKmPerDa
 const billableDist = Math.max(distanceKm, minKmForTrip);
 const distanceFare = billableDist * (config.perKm || 12);
 const baseKmFare = Math.max(baseFare, distanceFare);
-const driverAllowance = billableDist > 250 ? 600 : 400;
+const driverAllowance = 400;
 totalFare = ((baseKmFare + (booking.vehicle_type === 'bike' ? 0 : driverAllowance * tripDays)) + waitingCharge) + 5;
 } else if (booking.trip_type === 'rental') {
 const packageVal = booking.rental_package || '2-20';

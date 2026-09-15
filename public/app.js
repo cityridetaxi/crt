@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update hidden fields for booking
         vehicleSelect.value = selectedVehicleData.vType;
         currentTripType = selectedVehicleData.tripType;
-        fareVal.textContent = `\u20B9${selectedVehicleData.fare} (Approx.)`;
+        fareVal.textContent = `₹${selectedVehicleData.fare} (Approx.)`;
         distanceVal.textContent = selectedVehicleData.displayDistance;
         window.selectedDuration = selectedVehicleData.durationText;
 
@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fsFare = document.getElementById('fs-fare');
         if (fsDistance) fsDistance.textContent = `${selectedVehicleData.distanceKm} KM`;
         if (fsDuration) fsDuration.textContent = selectedVehicleData.durationText || '—';
-        if (fsFare) fsFare.textContent = `\u20B9${selectedVehicleData.fare}`;
+        if (fsFare) fsFare.textContent = `₹${selectedVehicleData.fare}`;
         if (strip) strip.classList.add('visible');
 
         // Show/hide return date for round trips
@@ -762,15 +762,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fb-distance').textContent = `${bd.distanceKm || lastCalculatedDistance || 0} KM`;
         document.getElementById('fb-duration').textContent = bd.durationText || window.selectedDuration || '—';
         document.getElementById('fb-vehicle').textContent = bd.vehicleName || '—';
-        document.getElementById('fb-rate').textContent = `\u20B9${bd.perKm || '—'}`;
-        document.getElementById('fb-platform-fee').textContent = `\u20B9${bd.gst || 0}`;
-        document.getElementById('fb-total').textContent = `\u20B9${bd.total || 0}`;
+        document.getElementById('fb-rate').textContent = `₹${bd.perKm || '—'}`;
+        document.getElementById('fb-platform-fee').textContent = `₹${bd.gst || 0}`;
+        document.getElementById('fb-total').textContent = `₹${bd.total || 0}`;
 
         const baseRow = document.getElementById('fb-base-row');
         if (bd.baseFare) {
             baseRow.className = 'fm-row';
             baseRow.innerHTML = `<span class="fm-label">🏠 Base Fare</span><span class="fm-value" id="fb-base-val"></span>`;
-            document.getElementById('fb-base-val').textContent = `\u20B9${bd.baseFare}`;
+            document.getElementById('fb-base-val').textContent = `₹${bd.baseFare}`;
         } else {
             baseRow.innerHTML = '';
         }
@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bd.driverAllowance) {
             allowanceRow.className = 'fm-row';
             allowanceRow.innerHTML = `<span class="fm-label">👨‍🚕 Driver Betta</span><span class="fm-value" id="fb-allowance-val"></span>`;
-            document.getElementById('fb-allowance-val').textContent = `\u20B9${bd.driverAllowance}`;
+            document.getElementById('fb-allowance-val').textContent = `₹${bd.driverAllowance}`;
         } else {
             allowanceRow.innerHTML = '';
         }
@@ -788,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bd.peakCharge) {
             peakRow.className = 'fm-row';
             peakRow.innerHTML = `<span class="fm-label">⚡ Peak Surcharge</span><span class="fm-value" style="color:#ff9f0a;" id="fb-peak-val"></span>`;
-            document.getElementById('fb-peak-val').textContent = `\u20B9${bd.peakCharge}`;
+            document.getElementById('fb-peak-val').textContent = `₹${bd.peakCharge}`;
         } else {
             peakRow.innerHTML = '';
         }
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
             extraStopsRow.className = 'fm-row';
             extraStopsRow.innerHTML = `<span class="fm-label">🛑 Extra Stops (${bd.extraDropsCount})</span><span class="fm-value" id="fb-extra-stops-val"></span>`;
             peakRow.parentNode.insertBefore(extraStopsRow, peakRow.nextSibling);
-            document.getElementById('fb-extra-stops-val').textContent = `\u20B9${bd.extraDropsCharge}`;
+            document.getElementById('fb-extra-stops-val').textContent = `₹${bd.extraDropsCharge}`;
         } else {
             extraStopsRow.innerHTML = '';
             extraStopsRow.className = '';
@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
             specialRow.innerHTML = `<span class="fm-label">🏛️ ${bd.specialLocationName || 'Special Location'} (+${(bd.specialSurchargePct || 0).toFixed(0)}%)</span><span class="fm-value" style="color:#6c63ff;" id="fb-special-val"></span>`;
             const insertAfter = extraStopsRow.parentNode ? extraStopsRow : peakRow;
             insertAfter.parentNode.insertBefore(specialRow, insertAfter.nextSibling);
-            document.getElementById('fb-special-val').textContent = `\u20B9${bd.specialLocationCharge}`;
+            document.getElementById('fb-special-val').textContent = `₹${bd.specialLocationCharge}`;
         } else {
             specialRow.innerHTML = '';
             specialRow.className = '';
@@ -871,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tripType: selectedVehicleData.tripType,
             returnDate: selectedVehicleData.tripType === 'round' ? document.getElementById('return-date').value : null,
             rentalPackage: selectedVehicleData.tripType === 'rental' ? document.getElementById('rental-package').value : null,
-            fare: `\u20B9${selectedVehicleData.fare}`,
+            fare: `₹${selectedVehicleData.fare}`,
             distance: `${selectedVehicleData.distanceKm} KM`,
             estimatedDuration: window.selectedDuration || null,
             specialPlaceType: selectedVehicleData.specialPlaceType || null
@@ -916,7 +916,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💰</span> Estimated Fare</div>
-                    <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">\u20B9${selectedVehicleData.fare}</div>
+                    <div id="cm-fare" style="text-align:right; font-size:1.1rem; font-weight:800; color:var(--cr-primary);">₹${selectedVehicleData.fare}</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--cr-border-light);">
                     <div style="display:flex; align-items:center; gap:8px; color:var(--cr-text-muted); font-size:0.9rem;"><span style="font-size:1.1rem;">💺</span> Seats Required</div>
@@ -1140,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayDistance = `${distance} KM`;
                     detailLabel = customerFee > 0 ? `Incl. ₹${customerFee.toFixed(2)} Platform Fee.` : `Fare Details`;
                     if (extraDropsCount > 0) {
-                        detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
+                        detailLabel += ` (+₹${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
                     if (peakMult > 0) detailLabel += ` [Peak Hour +25%]`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
@@ -1152,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const distanceFare = billableDist * config.perKm;
                     const baseFareLimit = config.base || 0;
                     const baseKmFare = Math.max(baseFareLimit, distanceFare);
-                    const driverAllowance = billableDist > 250 ? 600 : 400;
+                    const driverAllowance = 400;
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
 
                     const extraDropsCharge = extraDropsCount * 50;
@@ -1162,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayDistance = `${distance} KM`;
                     detailLabel = `Incl. Allowance${customerFee > 0 ? ` & ₹${customerFee.toFixed(2)} Platform Fee` : ''}.`;
                     if (extraDropsCount > 0) {
-                        detailLabel += ` (+\u20B9${extraDropsCharge} for ${extraDropsCount} stop(s))`;
+                        detailLabel += ` (+₹${extraDropsCharge} for ${extraDropsCount} stop(s))`;
                     }
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                     if (distance < minKm) detailLabel += ` [${minKm}KM Min Applied]`;
@@ -1174,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const distanceFare = billableDist * config.perKm;
                     const baseFareLimit = config.base || 0;
                     const baseKmFare = Math.max(baseFareLimit, distanceFare);
-                    const driverAllowance = billableDist > 250 ? 600 : 400;
+                    const driverAllowance = 400;
                     const specialCharge = Math.round(baseKmFare * specialSurchargePct / 100);
                     const baseTotal = baseKmFare + (vType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge;
                     customerFee = getPlatformFee(baseTotal);
@@ -1196,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     customerFee = getPlatformFee(baseTotal);
                     totalFare = baseTotal + customerFee;
                     displayDistance = distance > 0 ? `${distance} KM` : 'Fixed Base';
-                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra \u20B9${config.extraHour}/hr, \u20B9${config.extraKm}/km${customerFee > 0 ? ` • Incl. \u20B9${customerFee.toFixed(2)} Platform Fee.` : '.'}`;
+                    detailLabel = `${pMaxHrs}Hr/${pMaxKm}KM • Extra ₹${config.extraHour}/hr, ₹${config.extraKm}/km${customerFee > 0 ? ` • Incl. ₹${customerFee.toFixed(2)} Platform Fee.` : '.'}`;
                     if (specialSurchargePct > 0) detailLabel += ` [🏗️ ${specialDisplayName} +${specialSurchargePct.toFixed(0)}%]`;
                 }
 
@@ -1246,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const fareDiv = document.createElement('div');
                 fareDiv.className = 'vc-fare';
-                fareDiv.textContent = `\u20B9${totalFare}`;
+                fareDiv.textContent = `₹${totalFare}`;
                 card.appendChild(fareDiv);
 
                 if (!isDisabled) {
@@ -1256,11 +1256,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Enable the select button
                         const vmBtn = document.getElementById('vm-select-btn');
-                        if (vmBtn) { vmBtn.disabled = false; vmBtn.textContent = `Select ${info.name} • \u20B9${totalFare}`; }
+                        if (vmBtn) { vmBtn.disabled = false; vmBtn.textContent = `Select ${info.name} • ₹${totalFare}`; }
 
                         // Build breakdown for fare popup
                         const gst = customerFee;
-                        const driverAllowanceAmt = (tType.id === 'oneway' || tType.id === 'round') && vType !== 'bike' ? (distance > 250 ? 600 : 400) : 0;
+                        const driverAllowanceAmt = (tType.id === 'oneway' || tType.id === 'round') && vType !== 'bike' ? 400 : 0;
                         const extraDropsCharge = tType.id === 'local' ? (extraDropsCount * 50) : (tType.id === 'oneway' ? (extraDropsCount * 50) : 0);
 
                         // Get correct base fare for peak and special location charges
@@ -1351,7 +1351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Show "Did you mean" banner if query was spell-corrected
                         if (data.correctedQuery) {
                             const hint = document.createElement('div');
-                            hint.style.cssText = 'padding: 6px 12px; font-size: 11px; color: #9ca3af; background: rgba(245\u20B958\u20B91,0.08); border-bottom: 1px solid rgba(255,255,255,0.06); font-style: italic;';
+                            hint.style.cssText = 'padding: 6px 12px; font-size: 11px; color: #9ca3af; background: rgba(245₹58₹1,0.08); border-bottom: 1px solid rgba(255,255,255,0.06); font-style: italic;';
                             hint.innerHTML = `🔤 Showing results for: <strong style="color:#f59e0b">${data.correctedQuery}</strong>`;
                             box.appendChild(hint);
                         }
@@ -1584,7 +1584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!map) {
             map = L.map('map-picker').setView([13.0827, 80.2707], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
@@ -1718,7 +1718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Parse base fare & update total fare with incentive
         const baseFareNum = parseFloat(String(pendingBookingData.fare || '0').replace(/[^0-9.]/g, '')) || 0;
         const totalFareNum = baseFareNum + incentiveFee;
-        pendingBookingData.fare = `\u20B9${totalFareNum.toFixed(0)}`;
+        pendingBookingData.fare = `₹${totalFareNum.toFixed(0)}`;
 
         confirmBookingWithTerms(true);
     };

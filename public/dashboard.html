@@ -1249,7 +1249,7 @@ const billableDist = Math.max(dist, minKm);
 const distanceFare = billableDist * config.perKm;
 const baseFareLimit = config.base || 0;
 const baseKmFare = Math.max(baseFareLimit, distanceFare);
-const driverAllowance = billableDist > 250 ? 600 : 400;
+const driverAllowance = 400;
 totalFare = (baseKmFare + (vType === 'bike' ? 0 : driverAllowance) + extraDropsCharge) * 1.05;
 } else if (tType === 'round') {
 let tripDays = 1;
@@ -1267,7 +1267,7 @@ const billableDist = Math.max(actualTwoWayDist, minKmForTrip * tripDays);
 const distanceFare = billableDist * config.perKm;
 const baseFareLimit = config.base || 0;
 const baseKmFare = Math.max(baseFareLimit, distanceFare);
-const driverAllowance = billableDist > 250 ? 600 : 400;
+const driverAllowance = 400;
 totalFare = (baseKmFare + (vType === 'bike' ? 0 : driverAllowance * tripDays)) * 1.05;
 } else if (tType === 'rental') {
 const packageVal = rentalPackage || '2-20';
@@ -1316,7 +1316,7 @@ ${stopsHtml}
 <div><b>Vehicle:</b> ${ride.vehicle_type.toUpperCase()} • <b>Category:</b> ${ride.trip_type.toUpperCase()}</div>
 <div><b>Estimated Distance:</b> ${distance} KM</div>
 <div><b>Estimated Duration:</b> 🕒 ${durationText}</div>
-<div><b>Estimated Fare:</b> <span id="rebook-fare-display" style="font-weight:700; color:var(--primary-red);">\u20B9${initialFare}</span></div>
+<div><b>Estimated Fare:</b> <span id="rebook-fare-display" style="font-weight:700; color:var(--primary-red);">₹${initialFare}</span></div>
 </div>
 <p style="margin-bottom: 1rem; font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Select pickup date and time for the repeated ride:</p>
 <div style="margin-bottom: 1rem;">
@@ -1366,7 +1366,7 @@ dateVal,
 returnDateVal,
 ride.rental_package
 );
-fareDisplay.textContent = `\u20B9${currentFare}`;
+fareDisplay.textContent = `₹${currentFare}`;
 };
 dateInput.addEventListener('change', updateModalFare);
 timeInput.addEventListener('change', updateModalFare);
@@ -1425,7 +1425,7 @@ vehicle: ride.vehicle_type,
 tripType: ride.trip_type,
 returnDate: returnDate,
 rentalPackage: ride.rental_package,
-fare: `\u20B9${finalFare}`,
+fare: `₹${finalFare}`,
 distance: `${distance} KM`,
 estimatedDuration: durationText
 };
@@ -1575,45 +1575,45 @@ async function showInvoiceModal(trip) {
                     
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">${formatRentalPackage(breakdown.rentalPackage)}</span>
-                        <span style="font-weight:600;">\u20B9${packageBase}</span>
+                        <span style="font-weight:600;">₹${packageBase}</span>
                     </div>
                     
                     ${extraKmCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Extra Distance Charge</span>
-                        <span style="font-weight:600;">\u20B9${extraKmCharge}</span>
+                        <span style="font-weight:600;">₹${extraKmCharge}</span>
                     </div>
                     ` : ''}
                     
                     ${extraHrCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Extra Duration Charge</span>
-                        <span style="font-weight:600;">\u20B9${extraHrCharge}</span>
+                        <span style="font-weight:600;">₹${extraHrCharge}</span>
                     </div>
                     ` : ''}
 
                     ${specialLocationCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:#ff9f0a;">${specialLocationName ? specialLocationName + ' Surcharge' : 'Special Location Surcharge'} (${specialLocationPct}%)</span>
-                        <span style="font-weight:600; color:#ff9f0a;">\u20B9${specialLocationCharge}</span>
+                        <span style="font-weight:600; color:#ff9f0a;">₹${specialLocationCharge}</span>
                     </div>
                     ` : ''}
                     
                     ${waitingCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--danger-red);">Waiting Charges</span>
-                        <span style="font-weight:600; color:var(--danger-red);">\u20B9${waitingCharge}</span>
+                        <span style="font-weight:600; color:var(--danger-red);">₹${waitingCharge}</span>
                     </div>
                     ` : ''}
 
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">${platformFeeDesc}</span>
-                        <span style="font-weight:600;">\u20B9${platformFee}</span>
+                        <span style="font-weight:600;">₹${platformFee}</span>
                     </div>
                     
                     <div style="display:flex; justify-content:space-between; margin-top:1rem; padding-top:1rem; border-top:1px dashed rgba(255,255,255,0.1); font-size:1.1rem; font-weight:800; color:var(--primary-red);">
                         <span>Total Amount</span>
-                        <span>\u20B9${breakdown.totalFare}</span>
+                        <span>₹${breakdown.totalFare}</span>
                     </div>
                 </div>
             `;
@@ -1649,62 +1649,62 @@ async function showInvoiceModal(trip) {
                     ${!isLocal && baseFare > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Base Fare</span>
-                        <span style="font-weight:600;">\u20B9${baseFare}</span>
+                        <span style="font-weight:600;">₹${baseFare}</span>
                     </div>
                     ` : ''}
 
                     ${minKmVal > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Min. Distance Charge (${minKmVal} KM)</span>
-                        <span style="font-weight:600;">\u20B9${minKmCharge}</span>
+                        <span style="font-weight:600;">₹${minKmCharge}</span>
                     </div>
                     ` : ''}
 
                     ${distanceFare > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Distance Charge (${coveredDist.toFixed(3)} km × \u20B9${perKmRate})</span>
-                        <span style="font-weight:600;">\u20B9${distanceFare}</span>
+                        <span style="color:var(--text-muted);">Distance Charge (${coveredDist.toFixed(3)} km × ₹${perKmRate})</span>
+                        <span style="font-weight:600;">₹${distanceFare}</span>
                     </div>
                     ` : ''}
 
                     ${peakCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--warning-amber);">Peak Surcharge (${breakdown.peakPercent || 0}%)</span>
-                        <span style="font-weight:600; color:var(--warning-amber);">\u20B9${peakCharge}</span>
+                        <span style="font-weight:600; color:var(--warning-amber);">₹${peakCharge}</span>
                     </div>` : ''}
 
                     ${driverAllowance > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:#0a84ff;">Driver Allowance</span>
-                        <span style="font-weight:600; color:#0a84ff;">\u20B9${driverAllowance}</span>
+                        <span style="font-weight:600; color:#0a84ff;">₹${driverAllowance}</span>
                     </div>` : ''}
 
                     ${extraDropsCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Extra Stops Charge (${breakdown.extraDropsCount || 0} stop(s))</span>
-                        <span style="font-weight:600;">\u20B9${extraDropsCharge}</span>
+                        <span style="font-weight:600;">₹${extraDropsCharge}</span>
                     </div>` : ''}
 
                     ${specialLocationCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:#ff9f0a;">${specialLocationName ? specialLocationName + ' Surcharge' : 'Special Location Surcharge'} (${specialLocationPct}%)</span>
-                        <span style="font-weight:600; color:#ff9f0a;">\u20B9${specialLocationCharge}</span>
+                        <span style="font-weight:600; color:#ff9f0a;">₹${specialLocationCharge}</span>
                     </div>` : ''}
 
                     ${waitingCharge > 0 ? `
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--danger-red);">Waiting Charges</span>
-                        <span style="font-weight:600; color:var(--danger-red);">\u20B9${waitingCharge}</span>
+                        <span style="font-weight:600; color:var(--danger-red);">₹${waitingCharge}</span>
                     </div>` : ''}
 
                     <div style="display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">${platformFeeDesc}</span>
-                        <span style="font-weight:600;">\u20B9${platformFee}</span>
+                        <span style="font-weight:600;">₹${platformFee}</span>
                     </div>
                     
                     <div style="display:flex; justify-content:space-between; margin-top:1rem; padding-top:1rem; border-top:1px dashed rgba(255,255,255,0.1); font-size:1.1rem; font-weight:800; color:var(--primary-red);">
                         <span>Total Amount</span>
-                        <span>\u20B9${breakdown.totalFare}</span>
+                        <span>₹${breakdown.totalFare}</span>
                     </div>
                 </div>
             `;
@@ -1719,7 +1719,7 @@ async function showInvoiceModal(trip) {
                     <!-- Header Strip -->
                     <div style="background:linear-gradient(135deg, #006B3A 0%, #004D25 100%); margin:-1rem -1rem 1.5rem -1rem; padding:1.5rem; text-align:center; position:relative; border-radius:0 0 20px 20px;">
                         <div style="font-size:0.8rem; text-transform:uppercase; font-weight:800; letter-spacing:1.5px; color:rgba(255,255,255,0.8); margin-bottom:0.5rem;">${breakdown.fareType === 'estimated' ? 'Estimated Fare' : 'Final Fare'}</div>
-                        <div style="font-size:2.8rem; font-weight:800; color:#fff; line-height:1; text-shadow:0 2px 10px rgba(0,0,0,0.3);">\u20B9${breakdown.totalFare}</div>
+                        <div style="font-size:2.8rem; font-weight:800; color:#fff; line-height:1; text-shadow:0 2px 10px rgba(0,0,0,0.3);">₹${breakdown.totalFare}</div>
                         <div style="position:absolute; top:1rem; right:1rem; background:rgba(0,0,0,0.2); padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:700; color:#fff;">#B${trip.id}</div>
                         ${breakdown.fareType === 'estimated' ? '<div style="font-size:0.7rem; color:rgba(255,255,255,0.7); margin-top:0.3rem;">Trip not yet started — this is the estimated fare</div>' : ''}
                     </div>

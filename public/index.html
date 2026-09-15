@@ -196,7 +196,7 @@
             <div style="display:none;"><select id="vehicle-type"><option value="auto_select"></option></select></div>
 
             <div id="vehicle-selection-container" style="display:none;"></div>
-            <div id="fare-estimate" class="hidden" style="display:none !important;"><span id="distance-val">0</span><span id="fare-val">\u20B90</span></div>
+            <div id="fare-estimate" class="hidden" style="display:none !important;"><span id="distance-val">0</span><span id="fare-val">₹0</span></div>
 
             <button type="submit" class="cr-btn cr-btn-primary" id="search-vehicles-btn" style="margin-top:16px;">Find Luxe Ride</button>
 
@@ -273,11 +273,11 @@
                     </div>
                     <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                         <strong style="color:var(--cr-text-main);">@Driver Betta:</strong> 
-                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B9400 (\u20B9600 above 250 kms)</span>
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 (₹600 above 250 kms)</span>
                     </div>
                     <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                         <strong style="color:var(--cr-text-main);">@Hill Station Charges:</strong> 
-                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B9400 extra</span>
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 extra</span>
                     </div>
                     <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                         <strong style="color:var(--cr-text-main);">@One Way Drop Trips:</strong> 
@@ -285,7 +285,7 @@
                     </div>
                     <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                         <strong style="color:var(--cr-text-main);">@Waiting Charges:</strong> 
-                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B92/min after allowed time (distance &times; 2 min free)</span>
+                        <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹2/min after allowed time (distance &times; 2 min free)</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px;">
                         <strong style="color:var(--cr-text-main);">@Max Luggage:</strong> 
@@ -330,11 +330,11 @@
                 </div>
                 <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                     <strong style="color:var(--cr-text-main);">@Driver Betta:</strong> 
-                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B9400 (\u20B9600 above 250 kms)</span>
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 (₹600 above 250 kms)</span>
                 </div>
                 <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                     <strong style="color:var(--cr-text-main);">@Hill Station Charges:</strong> 
-                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B9400 extra</span>
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹400 extra</span>
                 </div>
                 <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                     <strong style="color:var(--cr-text-main);">@One Way Drop Trips:</strong> 
@@ -342,7 +342,7 @@
                 </div>
                 <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
                     <strong style="color:var(--cr-text-main);">@Waiting Charges:</strong> 
-                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">\u20B92/min after allowed time (distance &times; 2 min free)</span>
+                    <span style="padding-left:8px; border-left:2px solid var(--cr-border-light);">₹2/min after allowed time (distance &times; 2 min free)</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:4px;">
                     <strong style="color:var(--cr-text-main);">@Max Luggage:</strong> 
@@ -418,7 +418,7 @@
             </div>
             <div style="padding: 24px; text-align: center;">
                 <div style="font-size: 0.85rem; color: var(--cr-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">Current Balance</div>
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--cr-primary); margin-bottom: 32px;">\u20B90.00</div>
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--cr-primary); margin-bottom: 32px;">₹0.00</div>
                 
                 <div style="background: var(--cr-surface-light); padding: 16px; border-radius: var(--cr-radius-md); margin-bottom: 24px;">
                     <div style="font-size: 0.9rem; font-weight: 600; color: var(--cr-text-main);">No recent transactions</div>
@@ -575,7 +575,7 @@
             setTimeout(() => {
                 try {
                     window.lmap = L.map('landing-map', {zoomControl: false, attributionControl: false}).setView([13.0827, 80.2707], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(window.lmap);
                 } catch(e){}

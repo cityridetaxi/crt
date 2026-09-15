@@ -508,7 +508,7 @@
             const destText = dropLoc ? ` to ${dropLoc.split(',')[0]}` : '';
             showToast('ride_ongoing', '🚀 Trip Started!', `Your trip${destText} has started. Wishing you a safe & comfortable journey!`, 6000, bId + '_ongoing');
         } else if (status === 'completed' || status === 'finished' || status === 'ride_completed') {
-            const fareMsg = fare ? ` Total Fare: \u20B9${fare}.` : '';
+            const fareMsg = fare ? ` Total Fare: ₹${fare}.` : '';
             showToast('ride_completed', '🏁 Trip Completed!', `You have reached your destination!${fareMsg} Thank you for riding with CityRide.`, 7000, bId + '_completed');
         } else if (status === 'cancelled' || status === 'ride_cancelled') {
             showToast('ride_cancelled', '❌ Ride Cancelled', `Booking #B${bId} has been cancelled.`, 6000, bId + '_cancelled');

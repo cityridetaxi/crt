@@ -361,15 +361,15 @@
             <div class="stat-banner">
                 <div class="b-card">
                     <h4>Total Revenue</h4>
-                    <div class="val" id="stat-revenue">\u20B90</div>
+                    <div class="val" id="stat-revenue">₹0</div>
                 </div>
                 <div class="b-card" style="border: 1px solid var(--primary); background: rgba(0, 107, 58, 0.02);">
                     <h4>Today Ride Fare</h4>
-                    <div class="val" id="stat-today-fare" style="color: var(--primary);">\u20B90</div>
+                    <div class="val" id="stat-today-fare" style="color: var(--primary);">₹0</div>
                 </div>
                 <div class="b-card" style="border: 1px solid var(--primary); background: rgba(0, 107, 58, 0.02);">
                     <h4>Daily Profit</h4>
-                    <div class="val" id="stat-profit" style="color: var(--primary);">\u20B90</div>
+                    <div class="val" id="stat-profit" style="color: var(--primary);">₹0</div>
                 </div>
                 <div class="b-card">
                     <h4>Live Missions</h4>
@@ -1282,7 +1282,7 @@
                 </div>
                 <div class="b-card">
                     <h4 id="report-card-4-label">GROSS REVENUE</h4>
-                    <div class="val" id="report-card-4-val" style="color: var(--primary-red-pista);">\u20B90</div>
+                    <div class="val" id="report-card-4-val" style="color: var(--primary-red-pista);">₹0</div>
                 </div>
             </div>
 
@@ -1399,15 +1399,15 @@
                 </div>
                 <div class="b-card">
                     <h4>GROSS VOLUME</h4>
-                    <div class="val" id="ug-card-gross" style="color: var(--primary-red-pista);">\u20B90</div>
+                    <div class="val" id="ug-card-gross" style="color: var(--primary-red-pista);">₹0</div>
                 </div>
                 <div class="b-card">
                     <h4>PLATFORM COMMISSION</h4>
-                    <div class="val" id="ug-card-comm">\u20B90</div>
+                    <div class="val" id="ug-card-comm">₹0</div>
                 </div>
                 <div class="b-card">
                     <h4>PILOT NET PAYOUT</h4>
-                    <div class="val" id="ug-card-payout">\u20B90</div>
+                    <div class="val" id="ug-card-payout">₹0</div>
                 </div>
                 <div class="b-card">
                     <h4>UNIQUE CUSTOMERS</h4>
@@ -1772,7 +1772,7 @@
                         </select>
                     </div>
                     <div class="input-group" style="margin-top: 1rem;">
-                        <label>Amount (\u20B9)</label>
+                        <label>Amount (₹)</label>
                         <input type="number" id="wallet-amount" min="1" step="any" required placeholder="100.00">
                     </div>
                     <div class="input-group" style="margin-top: 1rem;">
@@ -2195,9 +2195,9 @@ const updPilots = document.getElementById('upd-pilots');
 const updMissions = document.getElementById('upd-missions');
 const updCancels = document.getElementById('upd-cancels');
 
-if (rev) rev.textContent = stats && stats.revenue !== undefined ? `\u20B9${parseFloat(stats.revenue).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
-if (todayF) todayF.textContent = stats && stats.todayFare !== undefined ? `\u20B9${parseFloat(stats.todayFare).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
-if (pro) pro.textContent = stats && stats.profit !== undefined ? `\u20B9${parseFloat(stats.profit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '\u20B90.00';
+if (rev) rev.textContent = stats && stats.revenue !== undefined ? `₹${parseFloat(stats.revenue).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₹0.00';
+if (todayF) todayF.textContent = stats && stats.todayFare !== undefined ? `₹${parseFloat(stats.todayFare).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₹0.00';
+if (pro) pro.textContent = stats && stats.profit !== undefined ? `₹${parseFloat(stats.profit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₹0.00';
 if (act) act.textContent = stats ? stats.activeBookings : '0';
 if (dri) dri.textContent = stats ? stats.totalDrivers : '0';
 if (usr) usr.textContent = stats ? stats.totalUsers : '0';
@@ -2309,16 +2309,16 @@ abortSection.style.display = 'none';
 }
 bookings.forEach(b => {
 const isAssigned = b.status === 'assigned';
-const fareNum = parseFloat(b.fare.replace('\u20B9', '')) || 0;
+const fareNum = parseFloat(b.fare.replace('₹', '')) || 0;
 const markupNum = parseFloat(b.vendor_markup || 0);
 const baseFare = fareNum - markupNum;
-let financialInfo = `<strong>\u20B9${fareNum.toFixed(2)}</strong>`;
+let financialInfo = `<strong>₹${fareNum.toFixed(2)}</strong>`;
 if (b.vendor_id) {
 financialInfo = `
 <div style="font-size:0.85rem;">
-<span style="color:var(--success-green); font-weight:700;">Profit: \u20B9${markupNum.toFixed(2)}</span><br>
-<span style="color:var(--text-muted);">Base: \u20B9${baseFare.toFixed(2)}</span><br>
-<strong style="color:var(--primary-red)">Total: \u20B9${fareNum.toFixed(2)}</strong>
+<span style="color:var(--success-green); font-weight:700;">Profit: ₹${markupNum.toFixed(2)}</span><br>
+<span style="color:var(--text-muted);">Base: ₹${baseFare.toFixed(2)}</span><br>
+<strong style="color:var(--primary-red)">Total: ₹${fareNum.toFixed(2)}</strong>
 <div style="font-size:0.65rem; color:var(--info-blue); font-weight:800; margin-top:4px;">VENDOR: ${b.vendor_business_name || 'PARTNER'}</div>
 </div>
 `;
@@ -2500,7 +2500,7 @@ body.innerHTML += `
 <div class="p-phone"><a href="tel:${d.phone}">${d.phone || 'N/A'}</a></div>
 </div>
 </td>
-<td data-label="Current Balance"><strong style="color:var(--primary-red); font-size: 1.2rem;">\u20B9${parseFloat(d.wallet_balance || 0).toFixed(2)}</strong></td>
+<td data-label="Current Balance"><strong style="color:var(--primary-red); font-size: 1.2rem;">₹${parseFloat(d.wallet_balance || 0).toFixed(2)}</strong></td>
 <td data-label="Wallet Operations">
 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
 <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="openWalletModal(${d.id}, \`${d.name}\`, ${d.wallet_balance || 0})">💳 Quick Update</button>
@@ -2563,8 +2563,8 @@ try {
             <td data-label="ID &amp; Name"><strong>${a.name || 'N/A'}</strong><br><span style="font-size:0.8rem;color:var(--text-muted)">ID: #${a.id}</span></td>
             <td data-label="Admin Credentials"><span style="color:var(--primary-red);font-weight:700;">${a.admin_username || 'N/A'}</span><br><span style="font-size:0.75rem;color:var(--text-muted)">(Password encrypted)</span></td>
             <td data-label="Region"><span style="font-weight:700;color:var(--info-blue);">${a.city_name || 'All Tamil Nadu'}</span></td>
-            <td data-label="Share Model">${a.commission_type === 'percent' || a.commission_type === 'percentage' ? a.commission_value + '%' : '\u20B9' + a.commission_value + ' fixed'}</td>
-            <td data-label="Assoc. Wallet" style="font-size:1.05rem;font-weight:800;color:var(--primary-red)">\u20B9${parseFloat(a.balance||0).toFixed(2)}</td>
+            <td data-label="Share Model">${a.commission_type === 'percent' || a.commission_type === 'percentage' ? a.commission_value + '%' : '₹' + a.commission_value + ' fixed'}</td>
+            <td data-label="Assoc. Wallet" style="font-size:1.05rem;font-weight:800;color:var(--primary-red)">₹${parseFloat(a.balance||0).toFixed(2)}</td>
             <td data-label="Status"><span class="status-tag ${a.is_active ? 'status-completed' : 'status-cancelled'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
             <td data-label="Actions" style="white-space:nowrap">
             <button class="action-btn" onclick='openEditAssocModal(${JSON.stringify(a).replace(/"/g, "&quot;")})' title="Edit Details">✏️ Edit</button>
@@ -2801,7 +2801,7 @@ async function openEditAssocModal(assoc) {
                 <div>
                     <label style="font-weight:700;font-size:0.8rem;display:block;margin-bottom:4px">Commission Type</label>
                     <select id="ea-comm-type" class="swal2-input" style="margin:0;width:100%">
-                        <option value="fixed" ${assoc.commission_type === 'fixed' ? 'selected' : ''}>Fixed (\u20B9 per ride)</option>
+                        <option value="fixed" ${assoc.commission_type === 'fixed' ? 'selected' : ''}>Fixed (₹ per ride)</option>
                         <option value="percent" ${assoc.commission_type === 'percent' ? 'selected' : ''}>Percentage (% of fare)</option>
                     </select>
                 </div>
@@ -3481,11 +3481,11 @@ alert("Failed to generate PDF Report");
                         if (t.category === 'local') {
                             const base = config.base !== undefined ? config.base : (config.slab1_rate !== undefined ? config.slab1_rate : 0);
                             const rate = config.perKm !== undefined ? config.perKm : (config.slab1_rate !== undefined ? config.slab1_rate : 0);
-                            rateVal = `Base \u20B9${base} | \u20B9${rate}/km`;
+                            rateVal = `Base ₹${base} | ₹${rate}/km`;
                         } else {
                             const base = config.base || 0;
                             const perKm = config.perKm || 0;
-                            rateVal = base > 0 ? `Base \u20B9${base} | \u20B9${perKm}/km` : `\u20B9${perKm}/km`;
+                            rateVal = base > 0 ? `Base ₹${base} | ₹${perKm}/km` : `₹${perKm}/km`;
                         }
 
                         return `
@@ -3567,23 +3567,23 @@ alert("Failed to generate PDF Report");
                     
                     rateDetailsHtml = `
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding-bottom:6px; margin-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.08);">
-                            <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary-red)">\u20B9${baseFare}</strong></span>
+                            <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary-red)">₹${baseFare}</strong></span>
                             <span><span style="color:var(--text-muted)">Min KM:</span> <strong>${minKm} KM</strong></span>
                         </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.8rem;">
-                            <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>\u20B9${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>\u20B9${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>\u20B9${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>\u20B9${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>\u20B9${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>\u20B9${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>\u20B9${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>\u20B9${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>\u20B9${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>\u20B9${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
-                            <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>\u20B9${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>₹${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>₹${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>₹${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>₹${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>₹${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>₹${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>₹${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>₹${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>₹${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>₹${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
+                            <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>₹${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
                             <div style="grid-column: span 2; background:rgba(10,132,255,0.1); border:1px solid rgba(10,132,255,0.2); padding:6px 10px; border-radius:6px; margin-top:4px; text-align:center;">
-                                <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--info-blue)">\u20B9${above100}/km</strong>
+                                <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--info-blue)">₹${above100}/km</strong>
                             </div>
                         </div>
                     `;
@@ -3646,7 +3646,7 @@ alert("Failed to generate PDF Report");
             const container = document.getElementById('tariff-fields-container');
             container.innerHTML = `
                 <div class="input-group">
-                    <label>Base Fare (\u20B9)</label>
+                    <label>Base Fare (₹)</label>
                     <input type="number" step="0.01" id="edit-t-base" value="${config.base !== undefined ? config.base : 0}" required>
                 </div>
                 <div class="input-group">
@@ -3654,51 +3654,51 @@ alert("Failed to generate PDF Report");
                     <input type="number" id="edit-t-min" value="${config.minKm || 0}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 0-5 KM (\u20B9/km)</label>
+                    <label>Rate 0-5 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab1" value="${config.slab1_rate !== undefined ? config.slab1_rate : 30}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 6-10 KM (\u20B9/km)</label>
+                    <label>Rate 6-10 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab2" value="${config.slab2_rate !== undefined ? config.slab2_rate : 28}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 11-20 KM (\u20B9/km)</label>
+                    <label>Rate 11-20 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab3" value="${config.slab3_rate !== undefined ? config.slab3_rate : 26}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 21-30 KM (\u20B9/km)</label>
+                    <label>Rate 21-30 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab4" value="${config.slab4_rate !== undefined ? config.slab4_rate : 24}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 31-40 KM (\u20B9/km)</label>
+                    <label>Rate 31-40 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab5" value="${config.slab5_rate !== undefined ? config.slab5_rate : 22}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 41-50 KM (\u20B9/km)</label>
+                    <label>Rate 41-50 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab6" value="${config.slab6_rate !== undefined ? config.slab6_rate : 20}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 51-60 KM (\u20B9/km)</label>
+                    <label>Rate 51-60 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab7" value="${config.slab7_rate !== undefined ? config.slab7_rate : 18}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 61-70 KM (\u20B9/km)</label>
+                    <label>Rate 61-70 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab8" value="${config.slab8_rate !== undefined ? config.slab8_rate : 16}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 71-80 KM (\u20B9/km)</label>
+                    <label>Rate 71-80 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab9" value="${config.slab9_rate !== undefined ? config.slab9_rate : 15}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 81-90 KM (\u20B9/km)</label>
+                    <label>Rate 81-90 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab10" value="${config.slab10_rate !== undefined ? config.slab10_rate : 14}" required>
                 </div>
                 <div class="input-group">
-                    <label>Rate 91-100 KM (\u20B9/km)</label>
+                    <label>Rate 91-100 KM (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-slab11" value="${config.slab11_rate !== undefined ? config.slab11_rate : 13}" required>
                 </div>
                 <div class="input-group" style="grid-column: span 2;">
-                    <label style="color:var(--info-blue) !important; font-weight:800 !important;">Above 100 KM Standard Rate (\u20B9/km)</label>
+                    <label style="color:var(--info-blue) !important; font-weight:800 !important;">Above 100 KM Standard Rate (₹/km)</label>
                     <input type="number" step="0.01" id="edit-t-above100" value="${config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13)}" required>
                 </div>
             `;
@@ -4441,7 +4441,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                     data: {
                         labels: ['Total Revenue', 'Daily Profit'],
                         datasets: [{
-                            label: 'Amount (\u20B9)',
+                            label: 'Amount (₹)',
                             data: [revenue, profit],
                             backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(16, 185, 129, 0.8)'],
                             borderColor: ['#3B82F6', '#10B981'],
@@ -4597,7 +4597,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                     
                     const comm = item.commission_type === 'percentage' 
                         ? `${item.commission_value}%` 
-                        : `\u20B9${item.commission_value}`;
+                        : `₹${item.commission_value}`;
 
                     return `
                         <tr>
@@ -4606,7 +4606,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                             <td>${item.total_drivers || 0}</td>
                             <td>${item.completed_rides || 0}</td>
                             <td>${item.cancelled_rides || 0}</td>
-                            <td style="color: var(--primary-red-pista); font-weight: 600;">\u20B9${(parseFloat(item.total_revenue) || 0).toLocaleString()}</td>
+                            <td style="color: var(--primary-red-pista); font-weight: 600;">₹${(parseFloat(item.total_revenue) || 0).toLocaleString()}</td>
                             <td>${comm}</td>
                             <td>${statusPill}</td>
                         </tr>
@@ -4621,7 +4621,7 @@ async function updateSurgeRule(surgeKey, inputId) {
             document.getElementById('report-card-3-label').textContent = 'COMPLETED MISSIONS';
             document.getElementById('report-card-3-val').textContent = totalRides;
             document.getElementById('report-card-4-label').textContent = 'GROSS REVENUE';
-            document.getElementById('report-card-4-val').textContent = `\u20B9${totalRev.toLocaleString()}`;
+            document.getElementById('report-card-4-val').textContent = `₹${totalRev.toLocaleString()}`;
         }
 
         function renderVehicleReport(data) {
@@ -4676,8 +4676,8 @@ async function updateSurgeRule(surgeKey, inputId) {
                             <td>${drivers}</td>
                             <td>${rides}</td>
                             <td>${item.cancelled_rides || 0}</td>
-                            <td style="color: var(--primary-red-pista); font-weight: 600;">\u20B9${rev.toLocaleString()}</td>
-                            <td>\u20B9${avgFare}</td>
+                            <td style="color: var(--primary-red-pista); font-weight: 600;">₹${rev.toLocaleString()}</td>
+                            <td>₹${avgFare}</td>
                         </tr>
                     `;
                 }).join('');
@@ -4690,7 +4690,7 @@ async function updateSurgeRule(surgeKey, inputId) {
             document.getElementById('report-card-3-label').textContent = 'COMPLETED MISSIONS';
             document.getElementById('report-card-3-val').textContent = totalRides;
             document.getElementById('report-card-4-label').textContent = 'GROSS REVENUE';
-            document.getElementById('report-card-4-val').textContent = `\u20B9${totalRev.toLocaleString()}`;
+            document.getElementById('report-card-4-val').textContent = `₹${totalRev.toLocaleString()}`;
         }
 
         function renderDriverReport(data) {
@@ -4756,8 +4756,8 @@ async function updateSurgeRule(surgeKey, inputId) {
                             <td>${item.association_name || 'Direct'}</td>
                             <td>${rides}</td>
                             <td>${item.cancelled_rides || 0}</td>
-                            <td style="color: var(--primary-red-pista); font-weight: 600;">\u20B9${earnings.toLocaleString()}</td>
-                            <td>\u20B9${wallet.toFixed(2)}</td>
+                            <td style="color: var(--primary-red-pista); font-weight: 600;">₹${earnings.toLocaleString()}</td>
+                            <td>₹${wallet.toFixed(2)}</td>
                             <td>${statusPill}</td>
                         </tr>
                     `;
@@ -4771,7 +4771,7 @@ async function updateSurgeRule(surgeKey, inputId) {
             document.getElementById('report-card-3-label').textContent = 'COMPLETED MISSIONS';
             document.getElementById('report-card-3-val').textContent = totalRides;
             document.getElementById('report-card-4-label').textContent = 'TOTAL EARNINGS';
-            document.getElementById('report-card-4-val').textContent = `\u20B9${totalEarnings.toLocaleString()}`;
+            document.getElementById('report-card-4-val').textContent = `₹${totalEarnings.toLocaleString()}`;
         }
 
         function renderReportChart(data, type) {
@@ -4846,7 +4846,7 @@ async function updateSurgeRule(surgeKey, inputId) {
             if (currentReportType === 'associations') {
                 csvContent += "Association Name,District/City,Total Pilots,Completed Rides,Cancelled Rides,Gross Revenue,Commission\n";
                 reportDataCache.forEach(row => {
-                    const line = `"${row.name || ''}","${row.city_name || ''}",${row.total_drivers || 0},${row.completed_rides || 0},${row.cancelled_rides || 0},${row.total_revenue || 0},"${row.commission_type === 'percentage' ? row.commission_value + '%' : '\u20B9' + row.commission_value}"`;
+                    const line = `"${row.name || ''}","${row.city_name || ''}",${row.total_drivers || 0},${row.completed_rides || 0},${row.cancelled_rides || 0},${row.total_revenue || 0},"${row.commission_type === 'percentage' ? row.commission_value + '%' : '₹' + row.commission_value}"`;
                     csvContent += line + "\n";
                 });
             } else if (currentReportType === 'vehicles') {
@@ -5019,9 +5019,9 @@ async function updateSurgeRule(surgeKey, inputId) {
             const cardCancels = document.getElementById('ug-card-cancels');
 
             if (cardRides) cardRides.textContent = stats.total_rides || 0;
-            if (cardGross) cardGross.textContent = `\u20B9${parseFloat(stats.gross_revenue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-            if (cardComm) cardComm.textContent = `\u20B9${parseFloat(stats.platform_commission || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-            if (cardPayout) cardPayout.textContent = `\u20B9${parseFloat(stats.driver_payout || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            if (cardGross) cardGross.textContent = `₹${parseFloat(stats.gross_revenue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            if (cardComm) cardComm.textContent = `₹${parseFloat(stats.platform_commission || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            if (cardPayout) cardPayout.textContent = `₹${parseFloat(stats.driver_payout || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
             if (cardUsers) cardUsers.textContent = stats.unique_customers || 0;
             if (cardCancels) cardCancels.textContent = stats.cancelled_rides || 0;
 
@@ -5077,8 +5077,8 @@ async function updateSurgeRule(surgeKey, inputId) {
                         </td>
                         <td data-label="Fare & Payout">
                             <div style="text-align: right;">
-                                <strong style="${isCancelled ? 'color:#EF4444; text-decoration:line-through;' : 'color:var(--primary-red-pista);'}">\u20B9${fare.toFixed(2)}</strong>
-                                <div style="font-size:0.72rem; color:var(--text-muted);">Comm: \u20B9${comm} | Net: \u20B9${payout}</div>
+                                <strong style="${isCancelled ? 'color:#EF4444; text-decoration:line-through;' : 'color:var(--primary-red-pista);'}">₹${fare.toFixed(2)}</strong>
+                                <div style="font-size:0.72rem; color:var(--text-muted);">Comm: ₹${comm} | Net: ₹${payout}</div>
                             </div>
                         </td>
                         <td data-label="Status"><div style="text-align: right;"><span class="status-tag ${statusClass}" ${badgeStyle}>${(r.status || 'PENDING').toUpperCase()}</span></div></td>
@@ -5142,9 +5142,9 @@ async function updateSurgeRule(surgeKey, inputId) {
                         <div style="background:#0B140A; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
                             <div style="font-size:0.75rem; color:#A1A1AA; font-weight:700; text-transform:uppercase;">FINANCIAL &amp; GPS AUDIT</div>
                             <div style="margin-top:4px;"><strong>Trip Type:</strong> ${(ride.trip_type || 'LOCAL').toUpperCase()}</div>
-                            <div><strong>Gross Fare:</strong> <span style="color:#34D399; font-weight:800;">\u20B9${fare.toFixed(2)}</span></div>
-                            <div><strong>Platform Commission (10%):</strong> \u20B9${comm}</div>
-                            <div><strong>Pilot Net Payout (90%):</strong> \u20B9${payout}</div>
+                            <div><strong>Gross Fare:</strong> <span style="color:#34D399; font-weight:800;">₹${fare.toFixed(2)}</span></div>
+                            <div><strong>Platform Commission (10%):</strong> ₹${comm}</div>
+                            <div><strong>Pilot Net Payout (90%):</strong> ₹${payout}</div>
                             <div><strong>Odometer/GPS Distance:</strong> ${ride.actual_distance || ride.distance || '0'} KM</div>
                             <div><strong>Status:</strong> ${(ride.status || 'PENDING').toUpperCase()}</div>
                             ${ride.cancel_reason ? `<div style="color:#EF4444; margin-top:4px;"><strong>Cancel Reason:</strong> ${ride.cancel_reason}</div>` : ''}
@@ -5224,7 +5224,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                 `${r.driver_name || 'Unassigned'}\n(${r.car_number || 'N/A'})`,
                 `#USR-${r.user_id || 'N/A'}\n${r.passenger_name || ''}\n${r.passenger_phone || ''}`,
                 `${r.pickup_loc || ''}\n-> ${r.drop_loc || ''}`,
-                `\u20B9${parseFloat(r.fare || 0).toFixed(2)}`,
+                `₹${parseFloat(r.fare || 0).toFixed(2)}`,
                 (r.status || 'PENDING').toUpperCase()
             ]);
 
@@ -5283,7 +5283,7 @@ async function updateSurgeRule(surgeKey, inputId) {
 
                 if (!fleetRadarMap) {
                     fleetRadarMap = L.map('fleet-radar-map').setView([11.6643, 78.1460], 10);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '© OpenStreetMap'
                     }).addTo(fleetRadarMap);
@@ -5403,7 +5403,7 @@ async function updateSurgeRule(surgeKey, inputId) {
 
         function openWalletModal(id, driverName, currentBalance) {
             document.getElementById('wallet-driver-id').value = id;
-            document.getElementById('wallet-driver-name').value = `${driverName} (Bal: \u20B9${parseFloat(currentBalance || 0).toFixed(2)})`;
+            document.getElementById('wallet-driver-name').value = `${driverName} (Bal: ₹${parseFloat(currentBalance || 0).toFixed(2)})`;
             document.getElementById('wallet-amount').value = '';
             document.getElementById('wallet-note').value = '';
             document.getElementById('wallet-updated-by').value = 'Narayanan';
@@ -5421,7 +5421,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                     list.innerHTML = data.transactions.map(t => `
                         <div style="display:flex; justify-content:space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <div>
-                                <strong style="color:${t.type === 'credit' ? '#10b981' : '#ef4444'}">${t.type === 'credit' ? '+' : '-'} \u20B9${parseFloat(t.amount).toFixed(2)}</strong>
+                                <strong style="color:${t.type === 'credit' ? '#10b981' : '#ef4444'}">${t.type === 'credit' ? '+' : '-'} ₹${parseFloat(t.amount).toFixed(2)}</strong>
                                 <div style="color:var(--cr-text-muted); font-size: 0.75rem;">${t.note || ''}</div>
                             </div>
                             <div style="text-align:right;">
@@ -5559,7 +5559,7 @@ async function updateSurgeRule(surgeKey, inputId) {
                             <label style="font-weight:bold; color:#18181B; margin-top:10px; display:block;">Commission Type</label>
                             <select id="swal-a-type" class="swal2-input" style="width:100%; height:45px;">
                                 <option value="percent" ${assoc.commission_type === 'percent' || assoc.commission_type === 'percentage' ? 'selected' : ''}>Percentage (%)</option>
-                                <option value="fixed" ${assoc.commission_type === 'fixed' ? 'selected' : ''}>Fixed (\u20B9)</option>
+                                <option value="fixed" ${assoc.commission_type === 'fixed' ? 'selected' : ''}>Fixed (₹)</option>
                             </select>
                             <label style="font-weight:bold; color:#18181B; margin-top:10px; display:block;">Share Value</label>
                             <input id="swal-a-val" type="number" class="swal2-input" value="${assoc.commission_value || 0}">
@@ -5727,7 +5727,7 @@ async function deleteOffer(id) {
 async function openDetailedLedger(id, driverName, currentBalance) {
     document.getElementById('driver-ledger-modal').style.display = 'flex';
     document.getElementById('ledger-driver-title').innerText = `Ledger: ${driverName}`;
-    document.getElementById('ledger-driver-balance').innerHTML = `Current Balance: <strong style="color: ${currentBalance >= 0 ? 'var(--success-green)' : 'var(--danger-red)'}">\u20B9${parseFloat(currentBalance).toFixed(2)}</strong>`;
+    document.getElementById('ledger-driver-balance').innerHTML = `Current Balance: <strong style="color: ${currentBalance >= 0 ? 'var(--success-green)' : 'var(--danger-red)'}">₹${parseFloat(currentBalance).toFixed(2)}</strong>`;
     
     const list = document.getElementById('ledger-transactions-list');
     list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">Loading detailed ledger...</td></tr>';
@@ -5748,7 +5748,7 @@ async function openDetailedLedger(id, driverName, currentBalance) {
                         </span>
                     </td>
                     <td style="padding: 1rem; color: ${t.type === 'credit' ? '#10b981' : '#ef4444'}; font-weight: 800; font-size: 1.1rem;">
-                        ${t.type === 'credit' ? '+' : '-'} \u20B9${parseFloat(t.amount).toFixed(2)}
+                        ${t.type === 'credit' ? '+' : '-'} ₹${parseFloat(t.amount).toFixed(2)}
                     </td>
                     <td style="padding: 1rem;">
                         <div style="font-weight: 500;">${t.note || 'No notes provided'}</div>
@@ -5895,7 +5895,7 @@ async function loadVehicleAudit(isTabSwitch = false) {
         document.getElementById('va-card-total').textContent     = s.total_rides     || 0;
         document.getElementById('va-card-completed').textContent = s.completed_rides  || 0;
         document.getElementById('va-card-cancelled').textContent = s.cancelled_rides  || 0;
-        document.getElementById('va-card-fare').textContent      = '\u20B9' + fmt(s.total_fare);
+        document.getElementById('va-card-fare').textContent      = '₹' + fmt(s.total_fare);
         document.getElementById('va-card-vehicles').textContent  = s.active_vehicles  || 0;
         document.getElementById('va-card-users').textContent     = s.unique_users     || 0;
         
@@ -5937,7 +5937,7 @@ async function loadVehicleAudit(isTabSwitch = false) {
                         </div>
                     </td>
                     <td data-label="Rejected"><span style="color:#EF4444;font-weight:700;">${v.cancelled_rides}</span></td>
-                    <td style="font-weight:700;color:var(--primary);" data-label="Fare Collected">\u20B9${fare}</td>
+                    <td style="font-weight:700;color:var(--primary);" data-label="Fare Collected">₹${fare}</td>
                     <td data-label="Unique Users">${v.unique_users}</td>
                     <td data-label="Covered Districts">
                         <div style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.covered_districts||''}">
@@ -5997,7 +5997,7 @@ function _vaRenderRides(rides, title) {
             <td style="font-size:0.82rem;" title="${r.pickup_loc||''}" data-label="Pickup">${pickup}</td>
             <td style="font-size:0.82rem;" title="${r.drop_loc||''}" data-label="Drop">${drop}</td>
             <td style="font-size:0.82rem;" data-label="Distance">${dist !== '-' ? dist + ' km' : '-'}</td>
-            <td style="font-weight:700;color:var(--primary);" data-label="Fare">${fare !== '0' ? '\u20B9'+parseFloat(fare).toFixed(2) : '-'}</td>
+            <td style="font-weight:700;color:var(--primary);" data-label="Fare">${fare !== '0' ? '₹'+parseFloat(fare).toFixed(2) : '-'}</td>
             <td data-label="Status">
                 <span style="background:${statusColor(r.status)};color:#fff;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:700;text-transform:uppercase;">${r.status||'-'}</span>
             </td>
@@ -6029,7 +6029,7 @@ function resetVehicleAuditFilters() {
     if (vt) vt.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:3rem;">Click Search to load vehicle audit data.</td></tr>';
     if (rt) rt.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:3rem;">Ride list will appear after search.</td></tr>';
     ['va-card-total','va-card-completed','va-card-cancelled','va-card-vehicles','va-card-users'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent='0'; });
-    const fc = document.getElementById('va-card-fare'); if(fc) fc.textContent='\u20B90.00';
+    const fc = document.getElementById('va-card-fare'); if(fc) fc.textContent='₹0.00';
     const dc = document.getElementById('va-card-districts'); if(dc) dc.textContent='-';
     document.getElementById('va-vehicle-count').textContent = '0 vehicles';
     document.getElementById('va-ride-count').textContent    = '0 rides';
@@ -6083,7 +6083,7 @@ function exportVehicleAuditPDF() {
         (r.pickup_loc||'-').split(',')[0].substring(0,20),
         (r.drop_loc||'-').split(',')[0].substring(0,20),
         r.actual_distance || r.distance || '-',
-        r.fare ? '\u20B9'+(r.fare.toString().replace(/[^0-9.]/g,'')) : '-',
+        r.fare ? '₹'+(r.fare.toString().replace(/[^0-9.]/g,'')) : '-',
         r.status||'-'
     ]);
     doc.autoTable({

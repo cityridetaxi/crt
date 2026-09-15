@@ -11,7 +11,62 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=1.0.1">
     <script src="config.js"></script>
-    <style>.password-wrapper{min-width:0 !important;}.password-wrapper input{width:100% !important;box-sizing:border-box !important;}.auth-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),#1a1c1e;padding:2rem;}.auth-card{background:rgba(26,28,30,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);padding:4rem;border-radius:30px;width:100%;max-width:500px;box-shadow:var(--shadow-lg);color:white;}.auth-card label{color:rgba(255,255,255,0.7);}.auth-card input{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:white;}.auth-card input::placeholder{color:rgba(255,255,255,0.3);}.partner-badge{display:inline-block;background:var(--primary-red);padding:0.5rem 1rem;border-radius:8px;font-size:0.7rem;font-weight:800;text-transform:uppercase;margin-bottom:1.5rem;}</style>
+    <style>
+        .password-wrapper {
+            min-width: 0 !important;
+        }
+
+        .password-wrapper input {
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), #1a1c1e;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: rgba(26, 28, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4rem;
+            border-radius: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            color: white;
+        }
+
+        .auth-card label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .auth-card input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .auth-card input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .partner-badge {
+            display: inline-block;
+            background: var(--primary-red);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+    </style>
 </head>
 
 <body style="overflow: hidden;"> <!-- Lock scroll during splash -->
@@ -28,110 +83,137 @@
         <div class="splash-road-wrap">
             <div class="splash-road"></div>
             <svg class="splash-car" width="64" height="28" viewBox="0 0 64 28" fill="none">
-                <rect x="8" y="12" width="48" height="12" rx="4" fill="#dc143c"/>
-                <path d="M18 12 L22 4 L42 4 L46 12Z" fill="#c01030"/>
-                <rect x="23" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)"/>
-                <rect x="33" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)"/>
-                <circle cx="18" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5"/>
-                <circle cx="18" cy="24" r="1.5" fill="#888"/>
-                <circle cx="46" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5"/>
-                <circle cx="46" cy="24" r="1.5" fill="#888"/>
-                <ellipse cx="57" cy="16" rx="5" ry="3" fill="rgba(255,220,100,0.5)"/>
-                <rect x="54" y="14" width="3" height="4" rx="1" fill="#ffd700"/>
+                <rect x="8" y="12" width="48" height="12" rx="4" fill="#dc143c" />
+                <path d="M18 12 L22 4 L42 4 L46 12Z" fill="#c01030" />
+                <rect x="23" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
+                <rect x="33" y="5" width="8" height="6" rx="1" fill="rgba(150,220,255,0.7)" />
+                <circle cx="18" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
+                <circle cx="18" cy="24" r="1.5" fill="#888" />
+                <circle cx="46" cy="24" r="4" fill="#1a1a1a" stroke="#555" stroke-width="1.5" />
+                <circle cx="46" cy="24" r="1.5" fill="#888" />
+                <ellipse cx="57" cy="16" rx="5" ry="3" fill="rgba(255,220,100,0.5)" />
+                <rect x="54" y="14" width="3" height="4" rx="1" fill="#ffd700" />
             </svg>
         </div>
-        <div class="splash-progress-wrap"><div class="splash-progress-bar"></div></div>
+        <div class="splash-progress-wrap">
+            <div class="splash-progress-bar"></div>
+        </div>
         <div class="splash-status">Dispatching Systems…</div>
     </div>
     <div class="auth-container">
         <div class="auth-card">
             <div style="text-align: center; margin-bottom: 2.5rem;">
                 <div class="partner-badge">Partner Portal</div>
-                <div class="logo" style="display: flex; justify-content: center; margin-top: 10px; cursor: pointer;" onclick="window.location.href='driver-login.html'">
-                    <img src="logo.png" alt="CityRideTaxi" width="83" height="60" style="height: 60px; width: auto; filter: drop-shadow(0 0 10px rgba(183, 28, 28, 0.3));">
+                <div class="logo" style="display: flex; justify-content: center; margin-top: 10px; cursor: pointer;"
+                    onclick="window.location.href='driver-login.html'">
+                    <img src="logo.png" alt="CityRideTaxi" width="83" height="60"
+                        style="height: 60px; width: auto; filter: drop-shadow(0 0 10px rgba(183, 28, 28, 0.3));">
                 </div>
-                <h2 style="margin-top: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">Partner Driver Login</h2>
+                <h2 style="margin-top: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">Partner Driver
+                    Login</h2>
             </div>
 
             <form id="driver-login-form">
                 <div class="input-group">
-                    <label style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Phone Number</label>
-                    <input type="tel" id="login-phone" placeholder="" required style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 1px;">
+                    <label
+                        style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Phone
+                        Number</label>
+                    <input type="tel" id="login-phone" placeholder="" required
+                        style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 1px;">
                 </div>
                 <div class="input-group" style="margin-top: 1.5rem; margin-bottom: 2rem;">
-                    <label style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Access Key</label>
+                    <label
+                        style="color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Access
+                        Key</label>
                     <div class="password-wrapper">
-                        <input type="password" id="login-password" placeholder="••••••••" required style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 2px;">
-                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('login-password', this)">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <input type="password" id="login-password" placeholder="••••••••" required
+                            style="padding: 1rem; border-radius: 12px; font-size: 1.1rem; letter-spacing: 2px;">
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('login-password', this)">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
                         </button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-large" style="width: 100%; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 1.2rem;">Initialize Session</button>
+                <button type="submit" class="btn btn-primary btn-large"
+                    style="width: 100%; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 1.2rem;">Initialize
+                    Session</button>
             </form>
 
             <div style="margin-top: 2rem; text-align: center; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
-                Not a partner yet? 
-                <a href="https://cityridetaxi.org/driver-register.html" style="color: var(--primary-red); font-weight: 700; text-decoration: none; margin-left: 5px; transition: 0.3s;">Register as Partner</a>
+                Not a partner yet?
+                <span onclick="window.location.href='driver-register.html'"
+                    style="color: var(--primary-red); font-weight: 700; cursor: pointer; margin-left: 5px; transition: 0.3s;">Register
+                    as Partner</span>
             </div>
 
-            <div style="margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem; display: flex; justify-content: center;">
-                <a href="driver-login.html" class="btn-back" style="color:white; display: flex; align-items: center; justify-content: center;" title="CityRide Pilot Hub">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <div
+                style="margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem; display: flex; justify-content: center;">
+                <a href="driver-login.html" class="btn-back"
+                    style="color:white; display: flex; align-items: center; justify-content: center;"
+                    title="CityRide Pilot Hub">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
                 </a>
             </div>
         </div>
     </div>
 
     <script>const LOGIN_KEY = 'cityride_driver_login_draft';
-function setupPersistence() {
-const form = document.getElementById('driver-login-form');
-const saved = localStorage.getItem(LOGIN_KEY);
-if (saved) {
-const data = JSON.parse(saved);
-if (data.phone) document.getElementById('login-phone').value = data.phone;
-if (data.password) document.getElementById('login-password').value = data.password;
-}
-form.addEventListener('input', () => {
-const data = {
-phone: document.getElementById('login-phone').value,
-password: document.getElementById('login-password').value
-};
-localStorage.setItem(LOGIN_KEY, JSON.stringify(data));
-});
-}
-window.addEventListener('DOMContentLoaded', setupPersistence);
-document.getElementById('driver-login-form').addEventListener('submit', async (e) => {
-e.preventDefault();
-const phone = document.getElementById('login-phone').value;
-const password = document.getElementById('login-password').value;
-try {
-const res = await fetch(`${API_BASE_URL}/api/driver/login`, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ phone, password })
-});
-const result = await res.json();
-if (res.ok) {
-localStorage.setItem('cityride_pilot', JSON.stringify(result.user));
-localStorage.removeItem(LOGIN_KEY);
-window.location.href = 'driver.html';
-} else {
-alert(result.error);
-}
-} catch (err) {
-alert('Authorization failed');
-}
-});</script>
+        function setupPersistence() {
+            const form = document.getElementById('driver-login-form');
+            const saved = localStorage.getItem(LOGIN_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.phone) document.getElementById('login-phone').value = data.phone;
+                if (data.password) document.getElementById('login-password').value = data.password;
+            }
+            form.addEventListener('input', () => {
+                const data = {
+                    phone: document.getElementById('login-phone').value,
+                    password: document.getElementById('login-password').value
+                };
+                localStorage.setItem(LOGIN_KEY, JSON.stringify(data));
+            });
+        }
+        window.addEventListener('DOMContentLoaded', setupPersistence);
+        document.getElementById('driver-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('login-phone').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/driver/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('cityride_pilot', JSON.stringify(result.user));
+                    localStorage.removeItem(LOGIN_KEY);
+                    window.location.href = 'driver.html';
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert('Authorization failed');
+            }
+        });</script>
     <script>window.addEventListener('load', () => {
-const splash = document.getElementById('splash-screen');
-if (splash) {
-setTimeout(() => {
-splash.classList.add('splash-hidden');
-document.body.style.setProperty('overflow', 'auto', 'important');
-}, 3200);
-}
-});</script>
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                setTimeout(() => {
+                    splash.classList.add('splash-hidden');
+                    document.body.style.setProperty('overflow', 'auto', 'important');
+                }, 3200);
+            }
+        });</script>
     <script src="alert.js"></script>
 </body>
 

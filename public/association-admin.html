@@ -377,8 +377,8 @@
                 <button class="btn btn-primary" onclick="loadOverview()">&#8635; Refresh</button>
             </div>
             <div class="stat-banner">
-                <div class="b-card"><h4>Association Wallet</h4><div class="val" id="stat-wallet">\u20B90</div></div>
-                <div class="b-card"><h4>Total Earned</h4><div class="val" id="stat-earned">\u20B90</div></div>
+                <div class="b-card"><h4>Association Wallet</h4><div class="val" id="stat-wallet">₹0</div></div>
+                <div class="b-card"><h4>Total Earned</h4><div class="val" id="stat-earned">₹0</div></div>
                 <div class="b-card"><h4>District Pilots</h4><div class="val" id="stat-pilots">0</div></div>
                 <div class="b-card"><h4>Active Missions</h4><div class="val" id="stat-active">0</div></div>
                 <div class="b-card"><h4>Completed Rides</h4><div class="val" id="stat-completed">0</div></div>
@@ -565,8 +565,8 @@
             </div>
             <div class="wallet-card">
                 <div class="wc-label">Association Treasury Balance</div>
-                <div class="wc-balance" id="wallet-balance">\u20B90.00</div>
-                <div class="wc-meta">Total Commissions Earned: <strong id="wallet-earned">\u20B90.00</strong></div>
+                <div class="wc-balance" id="wallet-balance">₹0.00</div>
+                <div class="wc-meta">Total Commissions Earned: <strong id="wallet-earned">₹0.00</strong></div>
             </div>
             <div class="data-table-container">
                 <h3>Pilot Wallet Balances</h3>
@@ -695,7 +695,7 @@
                         <input type="number" id="sg-night" value="15" min="0" max="100">
                     </div>
                     <div class="input-group">
-                        <label>Outstation Driver Daily Bata (\u20B9/day)</label>
+                        <label>Outstation Driver Daily Bata (₹/day)</label>
                         <input type="number" id="sg-bata" value="400" min="0">
                     </div>
                     <div style="display:flex; align-items:flex-end;">
@@ -923,8 +923,8 @@ function switchTab(tabId, el) {
             ]);
             if (!statsRes || !ridesRes || !walletRes) return;
             const [stats, rides, wallet] = await Promise.all([statsRes.json(), ridesRes.json(), walletRes.json()]);
-            document.getElementById('stat-wallet').textContent = '\u20B9' + parseFloat(wallet.balance||0).toFixed(2);
-            document.getElementById('stat-earned').textContent = '\u20B9' + parseFloat(stats.totalFareCollected||0).toFixed(2);
+            document.getElementById('stat-wallet').textContent = '₹' + parseFloat(wallet.balance||0).toFixed(2);
+            document.getElementById('stat-earned').textContent = '₹' + parseFloat(stats.totalFareCollected||0).toFixed(2);
             document.getElementById('stat-pilots').textContent = stats.activePilots || 0;
             document.getElementById('stat-active').textContent = stats.assigned || 0;
             document.getElementById('stat-completed').textContent = stats.completed || 0;
@@ -1012,7 +1012,7 @@ function switchTab(tabId, el) {
             '<td data-label="Pilot"><strong>' + d.name + '</strong><br><small>' + (d.email||'') + '</small><br><small>📞 ' + (d.phone||'—') + '</small></td>' +
             '<td data-label="Vehicle">' + (d.car_number||'—') + '<br><small style="color:var(--text-muted)">' + (d.car_model||'—') + '</small></td>' +
             '<td data-label="Type"><span class="status-tag status-assigned">' + (d.vehicle_type||'—') + '</span></td>' +
-            '<td data-label="Wallet"><strong>\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
+            '<td data-label="Wallet"><strong>₹' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
             '<td data-label="Status"><span class="status-tag ' + (d.is_active ? 'status-completed' : 'status-cancelled') + '">' + (d.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td data-label="Actions"><button class="action-btn ' + (d.is_active ? 'danger' : '') + '" onclick="toggleDriver(' + d.id + ')">' + (d.is_active ? '🚫 Suspend' : '✅ Activate') + '</button></td>' +
             '</tr>'
@@ -1066,8 +1066,8 @@ function switchTab(tabId, el) {
         const w = await res.json();
         const bal = document.getElementById('wallet-balance');
         const earned = document.getElementById('wallet-earned');
-        if (bal) bal.textContent = '\u20B9' + parseFloat(w.balance||0).toFixed(2);
-        if (earned) earned.textContent = '\u20B9' + parseFloat(w.total_earned||0).toFixed(2);
+        if (bal) bal.textContent = '₹' + parseFloat(w.balance||0).toFixed(2);
+        if (earned) earned.textContent = '₹' + parseFloat(w.total_earned||0).toFixed(2);
     }
 
     async function loadDriverWallets() {
@@ -1080,7 +1080,7 @@ function switchTab(tabId, el) {
             '<tr>' +
             '<td data-label="Pilot ID"><strong>#' + d.id + '</strong></td>' +
             '<td data-label="Pilot">' + d.name + '<br><small style="color:var(--text-muted)">' + (d.phone||'') + '</small></td>' +
-            '<td data-label="Balance"><strong style="font-size:1.1rem;">\u20B9' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
+            '<td data-label="Balance"><strong style="font-size:1.1rem;">₹' + parseFloat(d.wallet_balance||0).toFixed(2) + '</strong></td>' +
             '</tr>'
         ).join('');
     }
@@ -1088,7 +1088,7 @@ function switchTab(tabId, el) {
     async function showWalletAdjust(driverId, driverName) {
         const { value: form } = await Swal.fire({
             title: 'Wallet: ' + driverName,
-            html: '<div style="text-align:left"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Operation</label><select id="sw-type" class="swal2-input" style="margin-bottom:1rem;width:100%"><option value="credit">➕ Credit (Add Funds)</option><option value="debit">➖ Debit (Remove Funds)</option></select><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Amount (\u20B9)</label><input id="sw-amount" class="swal2-input" type="number" min="1" placeholder="Enter amount" style="margin-bottom:1rem;width:100%"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Note (Optional)</label><input id="sw-note" class="swal2-input" type="text" placeholder="Reason for adjustment" style="width:100%"></div>',
+            html: '<div style="text-align:left"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Operation</label><select id="sw-type" class="swal2-input" style="margin-bottom:1rem;width:100%"><option value="credit">➕ Credit (Add Funds)</option><option value="debit">➖ Debit (Remove Funds)</option></select><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Amount (₹)</label><input id="sw-amount" class="swal2-input" type="number" min="1" placeholder="Enter amount" style="margin-bottom:1rem;width:100%"><label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Note (Optional)</label><input id="sw-note" class="swal2-input" type="text" placeholder="Reason for adjustment" style="width:100%"></div>',
             showCancelButton: true,
             confirmButtonText: 'Apply',
             confirmButtonColor: '#006B3A',
@@ -1138,7 +1138,7 @@ function switchTab(tabId, el) {
                 const config = typeof found.config === 'string' ? JSON.parse(found.config) : (found.config || {});
                 const base = config.base !== undefined ? config.base : 0;
                 const perKm = config.slab1_rate !== undefined ? config.slab1_rate : (config.perKm || 0);
-                rateVal = base > 0 ? `Base \u20B9${base} | \u20B9${perKm}/km` : `\u20B9${perKm}/km`;
+                rateVal = base > 0 ? `Base ₹${base} | ₹${perKm}/km` : `₹${perKm}/km`;
             }
 
             const isSelected = _activeAssocVehicleKey === v.key;
@@ -1199,23 +1199,23 @@ function switchTab(tabId, el) {
         
         rateDetailsHtml = `
             <div style="display:flex; justify-content:space-between; font-size:0.88rem; padding-bottom:8px; margin-bottom:12px; border-bottom:1px dashed var(--border);">
-                <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary); font-size:1rem;">\u20B9${baseFare}</strong></span>
+                <span><span style="color:var(--text-muted)">Base Fare:</span> <strong style="color:var(--primary); font-size:1rem;">₹${baseFare}</strong></span>
                 <span><span style="color:var(--text-muted)">Min KM Distance:</span> <strong>${minKm} KM</strong></span>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.85rem;">
-                <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>\u20B9${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
-                <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>\u20B9${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
-                <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>\u20B9${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
-                <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>\u20B9${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
-                <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>\u20B9${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
-                <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>\u20B9${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
-                <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>\u20B9${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
-                <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>\u20B9${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
-                <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>\u20B9${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
-                <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>\u20B9${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
-                <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>\u20B9${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
+                <div><span style="color:var(--text-muted)">0-5 KM:</span> <strong>₹${config.slab1_rate !== undefined ? config.slab1_rate : 30}/km</strong></div>
+                <div><span style="color:var(--text-muted)">6-10 KM:</span> <strong>₹${config.slab2_rate !== undefined ? config.slab2_rate : 28}/km</strong></div>
+                <div><span style="color:var(--text-muted)">11-20 KM:</span> <strong>₹${config.slab3_rate !== undefined ? config.slab3_rate : 26}/km</strong></div>
+                <div><span style="color:var(--text-muted)">21-30 KM:</span> <strong>₹${config.slab4_rate !== undefined ? config.slab4_rate : 24}/km</strong></div>
+                <div><span style="color:var(--text-muted)">31-40 KM:</span> <strong>₹${config.slab5_rate !== undefined ? config.slab5_rate : 22}/km</strong></div>
+                <div><span style="color:var(--text-muted)">41-50 KM:</span> <strong>₹${config.slab6_rate !== undefined ? config.slab6_rate : 20}/km</strong></div>
+                <div><span style="color:var(--text-muted)">51-60 KM:</span> <strong>₹${config.slab7_rate !== undefined ? config.slab7_rate : 18}/km</strong></div>
+                <div><span style="color:var(--text-muted)">61-70 KM:</span> <strong>₹${config.slab8_rate !== undefined ? config.slab8_rate : 16}/km</strong></div>
+                <div><span style="color:var(--text-muted)">71-80 KM:</span> <strong>₹${config.slab9_rate !== undefined ? config.slab9_rate : 15}/km</strong></div>
+                <div><span style="color:var(--text-muted)">81-90 KM:</span> <strong>₹${config.slab10_rate !== undefined ? config.slab10_rate : 14}/km</strong></div>
+                <div><span style="color:var(--text-muted)">91-100 KM:</span> <strong>₹${config.slab11_rate !== undefined ? config.slab11_rate : 13}/km</strong></div>
                 <div style="grid-column: span 2; background:rgba(0,107,58,0.08); border:1px solid var(--border); padding:8px 12px; border-radius:8px; margin-top:4px; text-align:center;">
-                    <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--primary)">\u20B9${above100}/km</strong>
+                    <span style="color:var(--text-muted)">Above 100 KM Standard Rate:</span> <strong style="color:var(--primary)">₹${above100}/km</strong>
                 </div>
             </div>
         `;
@@ -1266,7 +1266,7 @@ function switchTab(tabId, el) {
         const container = document.getElementById('assoc-tariff-fields-container');
         container.innerHTML = `
             <div class="input-group">
-                <label>Base Fare (\u20B9)</label>
+                <label>Base Fare (₹)</label>
                 <input type="number" step="0.01" id="aedit-t-base" value="${config.base !== undefined ? config.base : 0}" required>
             </div>
             <div class="input-group">
@@ -1274,51 +1274,51 @@ function switchTab(tabId, el) {
                 <input type="number" id="aedit-t-min" value="${config.minKm || 0}" required>
             </div>
             <div class="input-group">
-                <label>Rate 0-5 KM (\u20B9/km)</label>
+                <label>Rate 0-5 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab1" value="${config.slab1_rate !== undefined ? config.slab1_rate : 30}" required>
             </div>
             <div class="input-group">
-                <label>Rate 6-10 KM (\u20B9/km)</label>
+                <label>Rate 6-10 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab2" value="${config.slab2_rate !== undefined ? config.slab2_rate : 28}" required>
             </div>
             <div class="input-group">
-                <label>Rate 11-20 KM (\u20B9/km)</label>
+                <label>Rate 11-20 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab3" value="${config.slab3_rate !== undefined ? config.slab3_rate : 26}" required>
             </div>
             <div class="input-group">
-                <label>Rate 21-30 KM (\u20B9/km)</label>
+                <label>Rate 21-30 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab4" value="${config.slab4_rate !== undefined ? config.slab4_rate : 24}" required>
             </div>
             <div class="input-group">
-                <label>Rate 31-40 KM (\u20B9/km)</label>
+                <label>Rate 31-40 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab5" value="${config.slab5_rate !== undefined ? config.slab5_rate : 22}" required>
             </div>
             <div class="input-group">
-                <label>Rate 41-50 KM (\u20B9/km)</label>
+                <label>Rate 41-50 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab6" value="${config.slab6_rate !== undefined ? config.slab6_rate : 20}" required>
             </div>
             <div class="input-group">
-                <label>Rate 51-60 KM (\u20B9/km)</label>
+                <label>Rate 51-60 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab7" value="${config.slab7_rate !== undefined ? config.slab7_rate : 18}" required>
             </div>
             <div class="input-group">
-                <label>Rate 61-70 KM (\u20B9/km)</label>
+                <label>Rate 61-70 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab8" value="${config.slab8_rate !== undefined ? config.slab8_rate : 16}" required>
             </div>
             <div class="input-group">
-                <label>Rate 71-80 KM (\u20B9/km)</label>
+                <label>Rate 71-80 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab9" value="${config.slab9_rate !== undefined ? config.slab9_rate : 15}" required>
             </div>
             <div class="input-group">
-                <label>Rate 81-90 KM (\u20B9/km)</label>
+                <label>Rate 81-90 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab10" value="${config.slab10_rate !== undefined ? config.slab10_rate : 14}" required>
             </div>
             <div class="input-group">
-                <label>Rate 91-100 KM (\u20B9/km)</label>
+                <label>Rate 91-100 KM (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-slab11" value="${config.slab11_rate !== undefined ? config.slab11_rate : 13}" required>
             </div>
             <div class="input-group" style="grid-column: span 2;">
-                <label style="color:var(--primary) !important; font-weight:800 !important;">Above 100 KM Standard Rate (\u20B9/km)</label>
+                <label style="color:var(--primary) !important; font-weight:800 !important;">Above 100 KM Standard Rate (₹/km)</label>
                 <input type="number" step="0.01" id="aedit-t-above100" value="${config.above100_rate !== undefined ? config.above100_rate : (config.slab11_rate || config.perKm || 13)}" required>
             </div>
         `;
@@ -1378,7 +1378,7 @@ function switchTab(tabId, el) {
             '<div class="tx-note">' + (t.note || (t.type === 'credit' ? 'Commission Credit' : 'Debit')) + '</div>' +
             '<div class="tx-date">' + (t.booking_id ? 'Ride #B' + t.booking_id + ' · ' : '') + 'Driver #' + (t.driver_id||'—') + ' · ' + new Date(t.created_at).toLocaleString('en-IN') + '</div>' +
             '</div>' +
-            '<div class="tx-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '\u20B9' + parseFloat(t.amount||0).toFixed(2) + '</div>' +
+            '<div class="tx-amount ' + t.type + '">' + (t.type === 'credit' ? '+' : '-') + '₹' + parseFloat(t.amount||0).toFixed(2) + '</div>' +
             '</div>'
         ).join('');
     }
@@ -1394,7 +1394,7 @@ function switchTab(tabId, el) {
         
         if (!assocRadarMap && typeof L !== 'undefined') {
             assocRadarMap = L.map('assoc-radar-map').setView([11.6643, 78.1460], 11);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
                 attribution: '© CityRide District GPS'
             }).addTo(assocRadarMap);
         }
@@ -1625,7 +1625,7 @@ function switchTab(tabId, el) {
             title: 'Request Treasury Payout',
             html: `
                 <div style="text-align:left;">
-                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Payout Amount (\u20B9)</label>
+                    <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Payout Amount (₹)</label>
                     <input id="po-amount" class="swal2-input" type="number" min="100" placeholder="Enter amount to withdraw" style="margin-bottom:1rem;width:100%">
                     <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.5rem">Withdrawal Method</label>
                     <select id="po-method" class="swal2-input" style="margin-bottom:1rem;width:100%">
@@ -1691,7 +1691,7 @@ function switchTab(tabId, el) {
                 leaderEl.innerHTML = '<div style="color:var(--text-muted)">No completed trip data available.</div>';
             } else {
                 leaderEl.innerHTML = `<table class="cityride-table"><thead><tr><th>Pilot</th><th>Vehicle</th><th>Completed Trips</th><th>Total Revenue</th></tr></thead><tbody>` +
-                    data.leaderboard.map(l => `<tr><td><strong>${l.name}</strong><br><small>📞 ${l.phone || ''}</small></td><td><span class="status-tag status-assigned">${l.vehicle_type || 'sedan'}</span></td><td><strong>${l.completed_rides}</strong></td><td><strong style="color:var(--primary);">\u20B9${parseFloat(l.total_revenue || 0).toFixed(2)}</strong></td></tr>`).join('') +
+                    data.leaderboard.map(l => `<tr><td><strong>${l.name}</strong><br><small>📞 ${l.phone || ''}</small></td><td><span class="status-tag status-assigned">${l.vehicle_type || 'sedan'}</span></td><td><strong>${l.completed_rides}</strong></td><td><strong style="color:var(--primary);">₹${parseFloat(l.total_revenue || 0).toFixed(2)}</strong></td></tr>`).join('') +
                     `</tbody></table>`;
             }
         }
@@ -1808,7 +1808,7 @@ function switchTab(tabId, el) {
                 supEl.innerHTML = '<div style="color:var(--text-muted)">No support tickets reported.</div>';
             } else {
                 supEl.innerHTML = `<table class="cityride-table"><thead><tr><th>Ride ID</th><th>Customer</th><th>Fare</th><th>Pilot</th></tr></thead><tbody>` +
-                    supData.map(t => `<tr><td>#B${t.booking_id}</td><td>${t.customer_name || 'Customer'}<br><small>📞 ${t.customer_phone || ''}</small></td><td>\u20B9${t.fare || 0}</td><td>${t.driver_name || 'Assigned'}</td></tr>`).join('') +
+                    supData.map(t => `<tr><td>#B${t.booking_id}</td><td>${t.customer_name || 'Customer'}<br><small>📞 ${t.customer_phone || ''}</small></td><td>₹${t.fare || 0}</td><td>${t.driver_name || 'Assigned'}</td></tr>`).join('') +
                     `</tbody></table>`;
             }
         }
@@ -1837,7 +1837,7 @@ function switchTab(tabId, el) {
         if (!res) return;
         const data = await res.json();
         if (data.success) {
-            Swal.fire({ icon: 'success', title: 'District Rules Active!', text: `Surge Multiplier set to ${multiplier}x with ${nightSurcharge}% Night Surcharge & \u20B9${bata} Bata.`, background: '#FFFFFF', color: '#000' });
+            Swal.fire({ icon: 'success', title: 'District Rules Active!', text: `Surge Multiplier set to ${multiplier}x with ${nightSurcharge}% Night Surcharge & ₹${bata} Bata.`, background: '#FFFFFF', color: '#000' });
         } else {
             Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: '#FFFFFF', color: '#000' });
         }

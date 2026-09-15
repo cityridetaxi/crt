@@ -58,7 +58,7 @@ async function calculateCanonicalFare(db, {
 
     // 2. Fetch Active Peak Rules
     const [peakRules] = await db.query('SELECT * FROM taxi_peak_rules WHERE is_active = 1');
-    const peakMult = getPeakMultiplier(pickupTime || new Date(), peakRules);
+    const peakMult = category === 'local' ? getPeakMultiplier(pickupTime || new Date(), peakRules) : 0;
 
     // 3. Fetch Special Location Charge
     let specialSurchargePct = 0;
@@ -144,7 +144,7 @@ async function calculateCanonicalFare(db, {
         const distanceFare = billableDist * (config.perKm || 13);
         baseKmFare = Math.max(baseFare, distanceFare);
         
-        const driverAllowance = billableDist > 250 ? 600 : 400;
+        const driverAllowance = 400;
         const specialCharge = baseKmFare * specialSurchargePct;
         const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance) + specialCharge + waitingCharge + extraDropsCharge;
         totalFare = baseTotal + getPlatformFee(baseTotal);
@@ -168,7 +168,7 @@ async function calculateCanonicalFare(db, {
         const distanceFare = billableDist * (config.perKm || 12);
         baseKmFare = Math.max(baseFare, distanceFare);
         
-        const driverAllowance = billableDist > 250 ? 600 : 400;
+        const driverAllowance = 400;
         const specialCharge = baseKmFare * specialSurchargePct;
         const baseTotal = baseKmFare + (vehicleType === 'bike' ? 0 : driverAllowance * tripDays) + specialCharge + waitingCharge;
         totalFare = baseTotal + getPlatformFee(baseTotal);
@@ -186,7 +186,7 @@ async function calculateCanonicalFare(db, {
         specialCharge: baseKmFare * specialSurchargePct,
         finalFare: Math.ceil(totalFare),
         platformFee: getPlatformFee(Math.ceil(totalFare - getPlatformFee(0))), // approximated base
-        driverAllowance: (category === 'oneway' || category === 'round') ? (vehicleType === 'bike' ? 0 : (distanceKm > 250 ? 600 : 400)) : 0,
+        driverAllowance: (category === 'oneway' || category === 'round') ? (vehicleType === 'bike' ? 0 : 400) : 0,
         pricingConfig
     };
 }
