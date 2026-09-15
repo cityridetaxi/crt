@@ -1543,9 +1543,12 @@ if (timeDiffSec > 0.5) {
 const distKm = getDistance(window.lastGpsCoords.lat, window.lastGpsCoords.lng, lat, lng);
 speedKmh = Math.round(distKm / (timeDiffSec / 3600));
 if (speedKmh > 160) speedKmh = 25;
-}
-}
 window.lastGpsCoords = { lat, lng, time: Date.now() };
+}
+} else {
+window.lastGpsCoords = { lat, lng, time: Date.now() };
+}
+
 const floatSpeedVal = document.getElementById('float-speed-val');
 if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
 if (activeRideObj && activeRideObj.status === 'ongoing') {
@@ -1553,21 +1556,14 @@ if (!window.clientKalmanFilter) {
 window.clientKalmanFilter = new LatLngKalmanFilter(4.0);
 }
 const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
-if (window.lastOdoCalcTime) {
+if (window.lastOdoCalcTime && window.lastSmoothedCoords) {
 const dtSeconds = Math.max(0.1, (Date.now() - window.lastOdoCalcTime) / 1000.0);
-let incrementalDistanceKm = 0;
-if (window.lastSmoothedCoords) {
 const segmentDist = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
 const calculatedSpeedMPS = (segmentDist * 1000.0) / dtSeconds;
-if ((calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001 && calculatedSpeedMPS >= 0.05) || (!gpsWatchId && segmentDist >= 0.001)) {
-// Bypassing speed limits if we are simulating (gpsWatchId is null)
-incrementalDistanceKm = segmentDist;
+if ((calculatedSpeedMPS <= 45.0 && segmentDist >= 0.001) || (!gpsWatchId && segmentDist >= 0.001)) {
+    window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + segmentDist;
+    localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
 }
-}
-        if (incrementalDistanceKm > 0 && (incrementalDistanceKm < 5.0 || !gpsWatchId)) {
-            window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + incrementalDistanceKm;
-            localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
-        }
 }
 window.lastSmoothedCoords = { lat: smoothed.lat, lng: smoothed.lng };
 window.lastOdoCalcTime = Date.now();
@@ -1734,6 +1730,7 @@ async function startGpsTracking() {
         // Priority 2: Haversine distance/time fallback, heavily filtered
         let rawSpeedKmh = 0;
         let nativeSpeedAvailable = false;
+        let updateLastGpsCoords = false;
 
         // Trust native speed over 0 m/s (Doppler is highly accurate)
         if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
@@ -1754,10 +1751,16 @@ async function startGpsTracking() {
                     } else {
                         rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
                     }
+                    updateLastGpsCoords = true; // Safe to anchor next interval
                 } else {
                     rawSpeedKmh = window.lastSmoothedSpeedKmh || 0;
+                    // Do NOT update lastGpsCoords here, let the time delta grow
                 }
+            } else {
+                updateLastGpsCoords = true;
             }
+        } else {
+            updateLastGpsCoords = true;
         }
 
         // Cap anomalous speeds (e.g., GPS glitch showing 300km/h)
@@ -1769,12 +1772,15 @@ async function startGpsTracking() {
         if (window.lastSmoothedSpeedKmh === undefined) window.lastSmoothedSpeedKmh = 0;
         window.lastSmoothedSpeedKmh = 0.2 * rawSpeedKmh + 0.8 * window.lastSmoothedSpeedKmh;
         
-        // Snap to zero if very slow to prevent drift
+        // Snap to zero if very slow to prevent drift (UI ONLY)
         if (window.lastSmoothedSpeedKmh < 3) window.lastSmoothedSpeedKmh = 0;
 
         const speedKmh = Math.round(window.lastSmoothedSpeedKmh);
 
-        window.lastGpsCoords = { lat, lng, time: Date.now() };
+        if (updateLastGpsCoords) {
+            window.lastGpsCoords = { lat, lng, time: Date.now() };
+        }
+        
         const floatSpeedVal = document.getElementById('float-speed-val');
         if (floatSpeedVal) floatSpeedVal.textContent = speedKmh;
 
@@ -1783,14 +1789,17 @@ async function startGpsTracking() {
         const smoothed = window.clientKalmanFilter.process(lat, lng, acc, Date.now());
 
         // --- Odometer Distance Accumulation ---
-        if (window.lastOdoCalcTime) {
+        // DECOUPLED FROM SPEEDOMETER TO PREVENT PROFIT LOSS
+        if (window.lastOdoCalcTime && window.lastSmoothedCoords) {
             const dtSeconds = (Date.now() - window.lastOdoCalcTime) / 1000.0;
             if (dtSeconds > 0) {
-                // Use the smoothed, highly accurate UI speed (km/h) to accumulate distance
-                // speedKmh * (hours) = distance in km. This guarantees odometer perfectly matches speedometer.
-                const incrementalDistanceKm = speedKmh * (dtSeconds / 3600.0);
-                if (incrementalDistanceKm > 0 && incrementalDistanceKm < 5.0) {
-                    window.localDistanceCovered = (window.localDistanceCovered || 0) + incrementalDistanceKm;
+                const segmentDistKm = getDistance(window.lastSmoothedCoords.lat, window.lastSmoothedCoords.lng, smoothed.lat, smoothed.lng);
+                
+                // Use backend sanity checks: max 45 m/s, ignore noise < 0.001km or < 0.05 m/s
+                const calculatedSpeedMPS = (segmentDistKm * 1000.0) / Math.max(0.1, dtSeconds);
+                if (calculatedSpeedMPS <= 45.0 && segmentDistKm >= 0.001 && calculatedSpeedMPS >= 0.05) {
+                    window.localDistanceCovered = (window.localDistanceCovered || parseFloat(localStorage.getItem('localDistanceCovered')) || 0) + segmentDistKm;
+                    localStorage.setItem('localDistanceCovered', window.localDistanceCovered);
                 }
             }
         }
